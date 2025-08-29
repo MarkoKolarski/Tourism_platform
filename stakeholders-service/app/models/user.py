@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum
 from sqlalchemy.sql import func
-from sqlalchemy.types import TypeDecorator, VARCHAR
 import enum
 from app.core.database import Base
 
