@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -17,7 +17,7 @@ class UserCreate(BaseModel):
     password: str
     role: UserRole
     
-    @validator('username')
+    @field_validator('username')
     def validate_username(cls, v):
         if len(v) < 3:
             raise ValueError('Korisničko ime mora imati najmanje 3 karaktera')
@@ -27,13 +27,13 @@ class UserCreate(BaseModel):
             raise ValueError('Korisničko ime može sadržavati samo slova, brojevi, _ i -')
         return v.lower()
     
-    @validator('password')
+    @field_validator('password')
     def validate_password(cls, v):
         if len(v) < 6:
             raise ValueError('Lozinka mora imati najmanje 6 karaktera')
         return v
     
-    @validator('role')
+    @field_validator('role')
     def validate_role(cls, v):
         if v == UserRole.ADMIN:
             raise ValueError('Admin uloga se ne može dodeliti kroz registraciju')
@@ -48,7 +48,7 @@ class UserProfileUpdate(BaseModel):
     biography: Optional[str] = None
     motto: Optional[str] = None
     
-    @validator('first_name', 'last_name')
+    @field_validator('first_name', 'last_name')
     def validate_names(cls, v):
         if v is not None:
             if len(v.strip()) == 0:
@@ -57,13 +57,13 @@ class UserProfileUpdate(BaseModel):
                 raise ValueError('Ime i prezime mogu imati maksimalno 50 karaktera')
         return v.strip() if v else v
     
-    @validator('motto')
+    @field_validator('motto')
     def validate_motto(cls, v):
         if v is not None and len(v) > 255:
             raise ValueError('Moto može imati maksimalno 255 karaktera')
         return v
     
-    @validator('biography')
+    @field_validator('biography')
     def validate_biography(cls, v):
         if v is not None and len(v) > 1000:
             raise ValueError('Biografija može imati maksimalno 1000 karaktera')
