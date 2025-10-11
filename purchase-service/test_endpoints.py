@@ -72,10 +72,9 @@ async def test_add_to_cart():
                 print(f"  ✅ Added! Cart total: ${cart['total_price']}")
             else:
                 print(f"  ❌ Failed: {response.text}")
-    
-    # Proveri final cart
-    response = await client.get(f"{BASE_URL}{API_PREFIX}/cart")
-    cart = response.json()
+        
+        response = await client.get(f"{BASE_URL}{API_PREFIX}/cart")
+        cart = response.json()
     
     print(f"\n📊 Final Cart:")
     print(f"  Items: {len(cart['items'])}")

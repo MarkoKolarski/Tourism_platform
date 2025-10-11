@@ -1,26 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL baza za Stakeholders Service
-  postgres:
-    image: postgres:15-alpine
-    container_name: tourism-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=tourism_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - tourism-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d tourism_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Neo4j baza za Followers Service
   neo4j:
     image: neo4j:latest
@@ -71,13 +51,10 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/tourism_db
+      - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_stakeholders
       - SECRET_KEY=dev-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - tourism-network
     restart: unless-stopped
@@ -90,22 +67,18 @@ services:
     ports:
       - "8003:8003"
     environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/tourism_db
+      - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_purchase
       - SECRET_KEY=dev-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - STAKEHOLDERS_SERVICE_URL=http://stakeholders-service:8001
       - FOLLOWERS_SERVICE_URL=http://followers-service:8002
       - TOURS_SERVICE_URL=http://tours-service:8004
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - tourism-network
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   neo4j_data:
   neo4j_logs:
 
