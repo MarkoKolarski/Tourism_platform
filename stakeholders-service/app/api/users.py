@@ -6,7 +6,8 @@ from app.schemas.user import (
     UserCreate, 
     UserCreateResponse, 
     UserProfileUpdate, 
-    UserProfileUpdateResponse
+    UserProfileUpdateResponse,
+    UserResponse
 )
 
 router = APIRouter()
@@ -39,6 +40,47 @@ async def register_user(
         role=new_user.role,
         message="Korisnik je uspešno registrovan"
     )
+
+
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Dobijanje podataka o korisniku po ID-u
+    
+    - **user_id**: ID korisnika
+    
+    Vraća sve javne podatke o korisniku.
+    Koristi se za validaciju korisnika u drugim servisima (npr. Purchase Service).
+    """
+    user_service = UserService(db)
+    
+    user = user_service.get_user_by_id(user_id)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Korisnik nije pronađen"
+        )
+    
+    # Kreiranje response-a sa explicit is_active poljem
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role.value if hasattr(user.role, 'value') else user.role,  # Handle enum
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "profile_image": user.profile_image,
+        "biography": user.biography,
+        "motto": user.motto,
+        "is_blocked": user.is_blocked,
+        "is_active": not user.is_blocked,  # Aktivan ako nije blokiran
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
 
 
 @router.put("/{user_id}/profile", response_model=UserProfileUpdateResponse)
