@@ -65,21 +65,22 @@ async def get_user(
             detail="Korisnik nije pronađen"
         )
     
-    return UserResponse(
-        id=user.id,
-        username=user.username,
-        email=user.email,
-        role=user.role,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        profile_image=user.profile_image,
-        biography=user.biography,
-        motto=user.motto,
-        is_blocked=user.is_blocked,
-        is_active=not user.is_blocked,  # Aktivan ako nije blokiran
-        created_at=user.created_at,
-        updated_at=user.updated_at
-    )
+    # Kreiranje response-a sa explicit is_active poljem
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role.value if hasattr(user.role, 'value') else user.role,  # Handle enum
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "profile_image": user.profile_image,
+        "biography": user.biography,
+        "motto": user.motto,
+        "is_blocked": user.is_blocked,
+        "is_active": not user.is_blocked,  # Aktivan ako nije blokiran
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
 
 
 @router.put("/{user_id}/profile", response_model=UserProfileUpdateResponse)

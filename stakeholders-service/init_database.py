@@ -97,7 +97,7 @@ def create_tables_and_populate():
             DO $$ 
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
-                    CREATE TYPE userrole AS ENUM ('admin', 'vodic', 'turista');
+                    CREATE TYPE userrole AS ENUM ('ADMIN', 'VODIC', 'TURISTA');
                 END IF;
             END $$;
         """)
@@ -147,7 +147,7 @@ def create_tables_and_populate():
                 'admin', 
                 'admin@tourism.com', 
                 '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewLkyQNnpTQYSwDS',
-                'admin'::userrole,
+                'ADMIN'::userrole,
                 'System',
                 'Administrator',
                 FALSE
@@ -167,7 +167,7 @@ def create_tables_and_populate():
                 'testuser', 
                 'testuser@tourism.com', 
                 '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
-                'turista'::userrole,
+                'TURISTA'::userrole,
                 'Test',
                 'User',
                 FALSE
@@ -187,7 +187,7 @@ def create_tables_and_populate():
                 'vodic1', 
                 'vodic@tourism.com', 
                 '$2b$12$vI8aWBnW3fID.ZQ4/zo1G.q1lRwq5/DgL6MzqQn5dMY6EiA9L0eMi',
-                'vodic'::userrole,
+                'VODIC'::userrole,
                 'Marko',
                 'Petrović',
                 'Iskusni vodič sa više od 10 godina iskustva u turizmu.',
@@ -210,15 +210,15 @@ def create_tables_and_populate():
         user_count = cursor.fetchone()[0]
         print(f"  👥 Ukupno korisnika: {user_count}")
         
-        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admin';")
+        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'ADMIN'::userrole;")
         admin_count = cursor.fetchone()[0]
         print(f"  👑 Admin korisnika: {admin_count}")
         
-        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'vodic';")
+        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'VODIC'::userrole;")
         vodic_count = cursor.fetchone()[0]
         print(f"  🗺️  Vodič korisnika: {vodic_count}")
         
-        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'turista';")
+        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'TURISTA'::userrole;")
         turista_count = cursor.fetchone()[0]
         print(f"  🎒 Turista korisnika: {turista_count}")
         

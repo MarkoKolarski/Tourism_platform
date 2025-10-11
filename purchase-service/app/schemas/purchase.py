@@ -13,7 +13,6 @@ class OrderStatusEnum(str, Enum):
     CANCELLED = "cancelled"
 
 
-# ========== Order Item Schemas ==========
 
 class OrderItemCreate(BaseModel):
     """Schema za kreiranje stavke u korpi"""
@@ -36,8 +35,6 @@ class OrderItemResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
-# ========== Shopping Cart Schemas ==========
 
 class ShoppingCartResponse(BaseModel):
     """Schema za prikaz korpe"""
@@ -64,8 +61,6 @@ class UpdateCartItemRequest(BaseModel):
     quantity: int = Field(..., ge=1, description="Nova količina")
 
 
-# ========== Purchase Token Schemas ==========
-
 class TourPurchaseTokenResponse(BaseModel):
     """Schema za prikaz purchase tokena"""
     id: int
@@ -81,8 +76,6 @@ class TourPurchaseTokenResponse(BaseModel):
         from_attributes = True
 
 
-# ========== Checkout Schemas ==========
-
 class CheckoutRequest(BaseModel):
     """Request za checkout proces"""
     cart_id: int = Field(..., description="ID korpe koja se kupuje")
@@ -97,8 +90,6 @@ class CheckoutResponse(BaseModel):
     total_price: float
     message: str
 
-
-# ========== SAGA Transaction Schemas ==========
 
 class SagaTransactionResponse(BaseModel):
     """Schema za prikaz SAGA transakcije"""
@@ -116,8 +107,6 @@ class SagaTransactionResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
-# ========== General Response ==========
 
 class MessageResponse(BaseModel):
     """Generička poruka"""
