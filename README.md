@@ -10,7 +10,7 @@ Projekat se sastoji od nezavisnih mikroservisa sa različitim tehnologijama:
 Tourism Platform
 ├── Stakeholders Service (Port 8001) - PostgreSQL
 ├── Followers Service (Port 8002) - Neo4j
-└── Blog Service (Port 8003) - TBD
+└── Purchase Service (Port 8003) - PostgreSQL + SAGA Pattern
 ```
 
 ## 📦 Servisi
@@ -43,14 +43,20 @@ Tourism Platform
 **Dokumentacija**: `followers-service/README.md`  
 **KT2 Info**: `followers-service/KT2_INFO.md`
 
-### 3. Blog Service (Port 8003)  
-**Tehnologije**: TBD  
-**Status**: 🚧 Planirano
+### 3. Purchase Service (Port 8003) - **NOVO! KT3**
+**Tehnologije**: Python + FastAPI + PostgreSQL + SAGA Pattern  
+**Status**: ✅ Implementiran (KT3)
 
-**Planirane funkcionalnosti**:
-- Kreiranje blog objava
-- Komentarisanje objava  
-- Lajkovanje objava
+**Implementirane funkcionalnosti**:
+- ✅ Shopping Cart sistem (korpa za kupovinu)
+- ✅ Order Items (stavke u korpi)
+- ✅ Checkout proces sa SAGA pattern-om
+- ✅ Tour Purchase Tokens (dokaz kupovine)
+- ✅ Distribuirane transakcije sa automatskom kompenzacijom
+- ✅ Integracija sa Stakeholders i Followers servisima
+- ✅ SAGA transaction tracking
+
+**Dokumentacija**: `purchase-service/README.md`
 
 ## 🚀 Pokretanje
 
@@ -65,6 +71,7 @@ docker-compose up -d
 Servisi će biti dostupni na:
 - Stakeholders Service: http://localhost:8001
 - Followers Service: http://localhost:8002
+- Purchase Service: http://localhost:8003
 - Neo4j Browser: http://localhost:7474
 
 ### Opcija 2: Pojedinačno Pokretanje
@@ -108,6 +115,12 @@ cd followers-service
 python test_endpoints.py
 ```
 
+### Purchase Service
+```powershell
+cd purchase-service
+python test_endpoints.py
+```
+
 ## 🐳 Docker
 
 Svaki servis ima svoj `Dockerfile`.  
@@ -119,7 +132,7 @@ Svaki servis ima svoj `Dockerfile`.
 |--------|-----------|------|------|--------|
 | Stakeholders | FastAPI | PostgreSQL | 8001 | ✅ KT1 |
 | Followers | FastAPI | Neo4j | 8002 | ✅ KT2 |
-| Blog | TBD | TBD | 8003 | 🚧 Planirano |
+| Purchase | FastAPI | PostgreSQL | 8003 | ✅ KT3 |
 
 ## 🎯 Kontrolne Tačke (KT)
 
@@ -137,10 +150,15 @@ Svaki servis ima svoj `Dockerfile`.
 - [x] Preporuke baziranih na grafu
 - [x] RESTful API
 
-### 🚧 KT3 - Blog Service (Planirano)
-- [ ] Blog objave
-- [ ] Komentari
-- [ ] Lajkovanje
+### ✅ KT3 - Purchase Service (SAGA Pattern)
+- [x] Potpuno novi mikroservis
+- [x] Shopping Cart funkcionalnost
+- [x] Checkout proces
+- [x] SAGA obrazac implementiran
+- [x] Purchase Tokens
+- [x] Distribuirane transakcije
+- [x] Automatska kompenzacija (rollback)
+- [x] Integracija sa drugim servisima
 
 ## 🔗 API Dokumentacija
 
@@ -148,6 +166,7 @@ Svaki servis ima interaktivnu Swagger dokumentaciju:
 
 - Stakeholders: http://localhost:8001/docs
 - Followers: http://localhost:8002/docs
+- Purchase: http://localhost:8003/docs
 
 ## 🌐 Health Checks
 
@@ -157,6 +176,9 @@ curl http://localhost:8001/health
 
 # Followers Service
 curl http://localhost:8002/health
+
+# Purchase Service
+curl http://localhost:8003/health
 ```
 
 ## 📁 Struktura Projekta
@@ -174,6 +196,17 @@ Tourism_platform/
 │   ├── requirements.txt
 │   ├── README.md
 │   └── KT2_INFO.md
+├── purchase-service/           # KT3 - Kupovina tura (SAGA Pattern)
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── saga/            # SAGA orchestrator
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── README.md
 ├── docker-compose.yml          # Orkestacija svih servisa
 └── README.md
 ```
