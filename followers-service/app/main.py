@@ -4,17 +4,15 @@ from app.core.config import settings
 from app.core.database import neo4j_db
 from app.api.followers import router as followers_router
 
-# Kreiranje FastAPI aplikacije
 app = FastAPI(
     title=settings.api_title,
     version=settings.api_version,
     description="Followers servis za Tourism Platform - sistem praćenja korisnika sa Neo4j"
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # U produkciji treba ograničiti
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,10 +26,8 @@ async def startup_event():
     neo4j_db.connect()
     print("Connected to Neo4j database")
     
-    # Kreiranje constraints za User node
     driver = neo4j_db.get_driver()
     with driver.session() as session:
-        # Unique constraint na user_id
         try:
             session.run("""
                 CREATE CONSTRAINT user_id_unique IF NOT EXISTS
@@ -50,7 +46,6 @@ async def shutdown_event():
     print("Disconnected from Neo4j database")
 
 
-# Uključivanje router-a
 app.include_router(
     followers_router, 
     prefix=f"{settings.api_prefix}/followers", 
@@ -58,7 +53,6 @@ app.include_router(
 )
 
 
-# Health check endpoint
 @app.get("/")
 async def root():
     return {

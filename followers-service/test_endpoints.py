@@ -6,9 +6,7 @@ BASE_URL = "http://localhost:8002/api/followers"
 
 def print_response(response, title="Response"):
     """Helper funkcija za formatiran prikaz odgovora"""
-    print(f"\n{'='*60}")
     print(f"{title}")
-    print(f"{'='*60}")
     print(f"Status Code: {response.status_code}")
     try:
         print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
@@ -18,14 +16,14 @@ def print_response(response, title="Response"):
 
 def test_health_check():
     """Test health check endpoint-a"""
-    print("\n🏥 Testing Health Check...")
+    print("\nTesting Health Check...")
     response = requests.get("http://localhost:8002/health")
     print_response(response, "Health Check")
 
 
 def test_create_users():
     """Test kreiranja korisnika"""
-    print("\n👤 Testing Create Users...")
+    print("\nTesting Create Users...")
     
     users = [
         {"user_id": 1, "username": "marko"},
@@ -45,7 +43,7 @@ def test_create_users():
 
 def test_follow():
     """Test follow funkcionalnosti"""
-    print("\n➕ Testing Follow...")
+    print("\nTesting Follow...")
     
     follows = [
         {"follower_id": 1, "following_id": 2},  # Marko -> Ana
@@ -67,7 +65,7 @@ def test_follow():
 
 def test_get_followers():
     """Test dobavljanja pratilaca"""
-    print("\n👥 Testing Get Followers...")
+    print("\nTesting Get Followers...")
     
     user_id = 1  # Marko
     response = requests.get(f"{BASE_URL}/followers/{user_id}")
@@ -76,7 +74,7 @@ def test_get_followers():
 
 def test_get_following():
     """Test dobavljanja korisnika koje prati"""
-    print("\n👣 Testing Get Following...")
+    print("\nTesting Get Following...")
     
     user_id = 1  # Marko
     response = requests.get(f"{BASE_URL}/following/{user_id}")
@@ -85,7 +83,7 @@ def test_get_following():
 
 def test_get_stats():
     """Test statistike"""
-    print("\n📊 Testing Get Stats...")
+    print("\nTesting Get Stats...")
     
     user_id = 1  # Marko
     response = requests.get(f"{BASE_URL}/stats/{user_id}")
@@ -94,7 +92,7 @@ def test_get_stats():
 
 def test_is_following():
     """Test provere praćenja"""
-    print("\n🔍 Testing Is Following...")
+    print("\nTesting Is Following...")
     
     # Marko prati Anu
     response = requests.get(f"{BASE_URL}/is-following/1/2")
@@ -111,7 +109,7 @@ def test_is_following():
 
 def test_mutual_followers():
     """Test uzajamnih pratilaca"""
-    print("\n🤝 Testing Mutual Followers...")
+    print("\nTesting Mutual Followers...")
     
     user_id = 1  # Marko
     response = requests.get(f"{BASE_URL}/mutual/{user_id}")
@@ -120,7 +118,7 @@ def test_mutual_followers():
 
 def test_recommendations():
     """Test preporuka za praćenje"""
-    print("\n💡 Testing Follow Recommendations...")
+    print("\nTesting Follow Recommendations...")
     
     user_id = 5  # Stefan
     response = requests.get(f"{BASE_URL}/recommendations/{user_id}?limit=5")
@@ -129,7 +127,7 @@ def test_recommendations():
 
 def test_unfollow():
     """Test unfollow funkcionalnosti"""
-    print("\n➖ Testing Unfollow...")
+    print("\nTesting Unfollow...")
     
     unfollow = {"follower_id": 1, "following_id": 2}  # Marko prestaje da prati Anu
     response = requests.post(
@@ -162,7 +160,7 @@ def test_can_read_blog():
 
 def test_can_comment_blog():
     """Test provere da li korisnik može komentarisati blog"""
-    print("\n💬 Testing Can Comment Blog (KT2)...")
+    print("\nTesting Can Comment Blog (KT2)...")
     
     # Ana (2) prati Marka (1) - može komentarisati
     response = requests.get(f"{BASE_URL}/can-comment-blog/2/1")
@@ -175,7 +173,7 @@ def test_can_comment_blog():
 
 def test_accessible_blogs():
     """Test dobavljanja dostupnih blogova"""
-    print("\n📚 Testing Accessible Blogs (KT2 - 2.2)...")
+    print("\nTesting Accessible Blogs (KT2 - 2.2)...")
     
     # Blogovi koje Marko (1) može da čita
     response = requests.get(f"{BASE_URL}/accessible-blogs/1")
@@ -188,7 +186,7 @@ def test_accessible_blogs():
 
 def test_who_can_comment():
     """Test ko može komentarisati blogove autora"""
-    print("\n👥 Testing Who Can Comment...")
+    print("\nTesting Who Can Comment...")
     
     # Ko može komentarisati Markove (1) blogove
     response = requests.get(f"{BASE_URL}/who-can-comment/1")
@@ -197,9 +195,8 @@ def test_who_can_comment():
 
 def run_all_tests():
     """Pokretanje svih testova"""
-    print("\n" + "="*60)
-    print("🚀 FOLLOWERS SERVICE - TEST SUITE")
-    print("="*60)
+    print("FOLLOWERS SERVICE - TEST SUITE")
+
     
     try:
         test_health_check()
@@ -217,16 +214,15 @@ def run_all_tests():
         test_who_can_comment()
         test_unfollow()
         
-        print("\n" + "="*60)
-        print("✅ ALL TESTS COMPLETED!")
-        print("="*60)
+        print("ALL TESTS COMPLETED!")
+
         
     except requests.exceptions.ConnectionError:
-        print("\n❌ ERROR: Cannot connect to the service!")
+        print("\nERROR: Cannot connect to the service!")
         print("Make sure the service is running on http://localhost:8002")
         print("Run: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload")
     except Exception as e:
-        print(f"\n❌ ERROR: {e}")
+        print(f"\nERROR: {e}")
 
 
 if __name__ == "__main__":
