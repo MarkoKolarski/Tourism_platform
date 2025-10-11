@@ -61,7 +61,16 @@ followers-service/
 
 ## 🚀 Brzo Pokretanje
 
-### 1. Neo4j Setup (Docker)
+### 1. Neo4j Setup (Docker Compose)
+
+Preporučeni način - koristi `docker-compose.yml`:
+
+```powershell
+# Pokreni ceo stack (Stakeholders + Followers + baze)
+docker-compose up -d
+```
+
+Ili samostalno samo Neo4j:
 
 ```powershell
 docker run -d `
@@ -71,7 +80,30 @@ docker run -d `
   neo4j:latest
 ```
 
-### 2. Kreiranje .env Fajla
+### 2. Inicijalizacija Neo4j Baze sa Test Podacima ⭐
+
+**NOVO!** Automatska inicijalizacija:
+
+```powershell
+# Windows - dvoklikom na bat fajl
+.\init_neo4j.bat
+
+# Ili PowerShell:
+.\init_neo4j.ps1
+
+# Ili Python direktno:
+python init_db_script.py
+```
+
+Ovo će kreirati:
+- ✅ 10 test korisnika (1 admin, 3 vodiča, 6 turista)
+- ✅ 16+ FOLLOWS relacija između korisnika
+- ✅ Constraints i indexe za performanse
+- ✅ Verifikaciju da je sve uspešno kreirano
+
+**📖 Za detaljna uputstva, vidi:** [`INICIJALIZACIJA_NEO4J.md`](INICIJALIZACIJA_NEO4J.md)
+
+### 3. Kreiranje .env Fajla (opciono)
 
 ```bash
 NEO4J_URI=bolt://localhost:7687
@@ -80,7 +112,7 @@ NEO4J_PASSWORD=testpassword
 SECRET_KEY=dev-secret-key
 ```
 
-### 3. Instalacija i Pokretanje
+### 4. Instalacija i Pokretanje
 
 ```powershell
 cd followers-service
@@ -88,13 +120,28 @@ pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
-### 4. Testiranje
+### 5. Testiranje
 
 ```powershell
 python test_endpoints.py
 ```
 
 Ili posetite: http://localhost:8002/docs
+
+### 6. Provera Neo4j Podataka
+
+Otvori Neo4j Browser: http://localhost:7474
+- Username: `neo4j`
+- Password: `testpassword`
+
+Probaj ove upite:
+```cypher
+// Vidi sve korisnike
+MATCH (u:User) RETURN u;
+
+// Vidi sve relacije
+MATCH (a)-[r:FOLLOWS]->(b) RETURN a, r, b;
+```
 
 ## 📊 Neo4j Graf Model
 
