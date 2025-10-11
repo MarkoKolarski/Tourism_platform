@@ -82,6 +82,7 @@ class UserResponse(BaseModel):
     biography: Optional[str]
     motto: Optional[str]
     is_blocked: bool
+    is_active: bool = True  # Korisnik je aktivan ako nije blokiran
     created_at: datetime
     updated_at: datetime
     
