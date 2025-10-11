@@ -136,11 +136,63 @@ def test_unfollow():
         f"{BASE_URL}/unfollow",
         json=unfollow
     )
-    print_response(response, f"Unfollow: {unfollow['follower_id']} -/-> {unfollow['follower_id']}")
+    print_response(response, f"Unfollow: {unfollow['follower_id']} -/-> {unfollow['following_id']}")
     
     # Provera da li je unfollow uspeo
     response = requests.get(f"{BASE_URL}/is-following/1/2")
     print_response(response, "Verification - Is User 1 still following User 2?")
+
+
+def test_can_read_blog():
+    """Test provere da li korisnik može čitati blog"""
+    print("\n📖 Testing Can Read Blog (KT2 - 2.2)...")
+    
+    # Marko (1) prati Anu (2) - može čitati
+    response = requests.get(f"{BASE_URL}/can-read-blog/1/2")
+    print_response(response, "Can User 1 read User 2's blog? (follows)")
+    
+    # Stefan (5) ne prati Marka (1) - ne može čitati
+    response = requests.get(f"{BASE_URL}/can-read-blog/5/1")
+    print_response(response, "Can User 5 read User 1's blog? (doesn't follow)")
+    
+    # Marko (1) čita svoj blog - može
+    response = requests.get(f"{BASE_URL}/can-read-blog/1/1")
+    print_response(response, "Can User 1 read own blog?")
+
+
+def test_can_comment_blog():
+    """Test provere da li korisnik može komentarisati blog"""
+    print("\n💬 Testing Can Comment Blog (KT2)...")
+    
+    # Ana (2) prati Marka (1) - može komentarisati
+    response = requests.get(f"{BASE_URL}/can-comment-blog/2/1")
+    print_response(response, "Can User 2 comment on User 1's blog? (follows)")
+    
+    # Stefan (5) ne prati Marka (1) - ne može komentarisati
+    response = requests.get(f"{BASE_URL}/can-comment-blog/5/1")
+    print_response(response, "Can User 5 comment on User 1's blog? (doesn't follow)")
+
+
+def test_accessible_blogs():
+    """Test dobavljanja dostupnih blogova"""
+    print("\n📚 Testing Accessible Blogs (KT2 - 2.2)...")
+    
+    # Blogovi koje Marko (1) može da čita
+    response = requests.get(f"{BASE_URL}/accessible-blogs/1")
+    print_response(response, "Which blogs can User 1 read?")
+    
+    # Blogovi koje Stefan (5) može da čita
+    response = requests.get(f"{BASE_URL}/accessible-blogs/5")
+    print_response(response, "Which blogs can User 5 read?")
+
+
+def test_who_can_comment():
+    """Test ko može komentarisati blogove autora"""
+    print("\n👥 Testing Who Can Comment...")
+    
+    # Ko može komentarisati Markove (1) blogove
+    response = requests.get(f"{BASE_URL}/who-can-comment/1")
+    print_response(response, "Who can comment on User 1's blogs?")
 
 
 def run_all_tests():
@@ -159,6 +211,10 @@ def run_all_tests():
         test_is_following()
         test_mutual_followers()
         test_recommendations()
+        test_can_read_blog()
+        test_can_comment_blog()
+        test_accessible_blogs()
+        test_who_can_comment()
         test_unfollow()
         
         print("\n" + "="*60)

@@ -198,3 +198,95 @@ class FollowerService:
             result = session.run(query, user_id=user_id)
             record = result.single()
             return record and record["deleted"] > 0
+    
+    def can_read_blog(self, reader_id: int, blog_author_id: int) -> tuple[bool, str]:
+        """
+        Proverava da li korisnik može da čita blog drugog korisnika.
+        Korisnik može čitati blog samo ako prati autora bloga.
+        
+        Returns:
+            tuple: (can_read: bool, reason: str)
+        """
+        # Korisnik može uvek čitati svoje blogove
+        if reader_id == blog_author_id:
+            return True, "Možete čitati sopstvene blogove"
+        
+        # Provera da li korisnik prati autora
+        is_following = self.is_following(reader_id, blog_author_id)
+        
+        if is_following:
+            return True, "Pratite ovog korisnika i možete čitati njegove blogove"
+        else:
+            return False, "Morate zapratiti korisnika da biste mogli čitati njegove blogove"
+    
+    def can_comment_blog(self, commenter_id: int, blog_author_id: int) -> tuple[bool, str]:
+        """
+        Proverava da li korisnik može da komentariše blog drugog korisnika.
+        Korisnik može komentarisati blog samo ako prati autora bloga.
+        
+        Returns:
+            tuple: (can_comment: bool, reason: str)
+        """
+        # Korisnik može komentarisati svoje blogove
+        if commenter_id == blog_author_id:
+            return True, "Možete komentarisati sopstvene blogove"
+        
+        # Provera da li korisnik prati autora
+        is_following = self.is_following(commenter_id, blog_author_id)
+        
+        if is_following:
+            return True, "Pratite ovog korisnika i možete komentarisati njegove blogove"
+        else:
+            return False, "Morate zapratiti korisnika da biste mogli komentarisati njegove blogove"
+    
+    def get_accessible_blogs(self, user_id: int) -> List[int]:
+        """
+        Vraća listu ID-jeva korisnika čije blogove korisnik može da čita.
+        To uključuje:
+        1. Korisnika samog (može čitati svoje blogove)
+        2. Sve korisnike koje korisnik prati
+        
+        Returns:
+            List[int]: Lista user_id-jeva čiji blogovi su dostupni
+        """
+        with self.driver.session() as session:
+            query = """
+            MATCH (user:User {user_id: $user_id})
+            OPTIONAL MATCH (user)-[:FOLLOWS]->(following:User)
+            WITH user, COLLECT(DISTINCT following.user_id) AS following_ids
+            RETURN [user.user_id] + following_ids AS accessible_authors
+            """
+            result = session.run(query, user_id=user_id)
+            record = result.single()
+            
+            if record and record["accessible_authors"]:
+                # Filtriranje None vrednosti i vraćanje liste
+                return [uid for uid in record["accessible_authors"] if uid is not None]
+            else:
+                # Ako nema rezultata, korisnik može čitati samo svoje blogove
+                return [user_id]
+    
+    def get_users_who_can_comment_on_blog(self, blog_author_id: int) -> List[int]:
+        """
+        Vraća listu ID-jeva korisnika koji mogu komentarisati blogove određenog autora.
+        To uključuje:
+        1. Samog autora
+        2. Sve korisnike koji prate autora
+        
+        Returns:
+            List[int]: Lista user_id-jeva koji mogu komentarisati
+        """
+        with self.driver.session() as session:
+            query = """
+            MATCH (author:User {user_id: $blog_author_id})
+            OPTIONAL MATCH (follower:User)-[:FOLLOWS]->(author)
+            WITH author, COLLECT(DISTINCT follower.user_id) AS follower_ids
+            RETURN [author.user_id] + follower_ids AS can_comment_users
+            """
+            result = session.run(query, blog_author_id=blog_author_id)
+            record = result.single()
+            
+            if record and record["can_comment_users"]:
+                return [uid for uid in record["can_comment_users"] if uid is not None]
+            else:
+                return [blog_author_id]

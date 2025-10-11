@@ -8,7 +8,10 @@ from app.schemas.follower import (
     FollowStatsResponse,
     IsFollowingResponse,
     MutualFollowersResponse,
-    FollowRecommendationsResponse
+    FollowRecommendationsResponse,
+    CanReadBlogResponse,
+    CanCommentBlogResponse,
+    AccessibleBlogsResponse
 )
 from app.services.follower_service import FollowerService
 from app.core.database import get_neo4j_driver
@@ -218,4 +221,100 @@ async def delete_user_node(
     return {
         "message": "Korisnik uspešno obrisan",
         "user_id": user_id
+    }
+
+
+@router.get("/can-read-blog/{reader_id}/{blog_author_id}", response_model=CanReadBlogResponse)
+async def check_can_read_blog(
+    reader_id: int,
+    blog_author_id: int,
+    service: FollowerService = Depends(get_follower_service)
+):
+    """
+    Proverava da li korisnik može da čita blog drugog korisnika.
+    
+    **Pravilo (KT2 - 2.2)**: Korisnici mogu da čitaju blogove samo onih korisnika koje su zapratili.
+    
+    Korisnik može čitati blog ako:
+    - Čita sopstveni blog
+    - Prati autora bloga
+    """
+    can_read, reason = service.can_read_blog(reader_id, blog_author_id)
+    
+    return {
+        "reader_id": reader_id,
+        "blog_author_id": blog_author_id,
+        "can_read": can_read,
+        "reason": reason
+    }
+
+
+@router.get("/can-comment-blog/{commenter_id}/{blog_author_id}", response_model=CanCommentBlogResponse)
+async def check_can_comment_blog(
+    commenter_id: int,
+    blog_author_id: int,
+    service: FollowerService = Depends(get_follower_service)
+):
+    """
+    Proverava da li korisnik može da komentariše blog drugog korisnika.
+    
+    **Pravilo (KT2)**: Korisnik može da ostavi komentar na blog samo ako prati autora.
+    
+    Korisnik može komentarisati blog ako:
+    - Komentariše sopstveni blog
+    - Prati autora bloga
+    """
+    can_comment, reason = service.can_comment_blog(commenter_id, blog_author_id)
+    
+    return {
+        "commenter_id": commenter_id,
+        "blog_author_id": blog_author_id,
+        "can_comment": can_comment,
+        "reason": reason
+    }
+
+
+@router.get("/accessible-blogs/{user_id}", response_model=AccessibleBlogsResponse)
+async def get_accessible_blogs(
+    user_id: int,
+    service: FollowerService = Depends(get_follower_service)
+):
+    """
+    Vraća listu ID-jeva autora čije blogove korisnik može da čita.
+    
+    **Pravilo (KT2 - 2.2)**: Korisnici mogu da čitaju blogove samo onih korisnika koje su zapratili.
+    
+    Ovo uključuje:
+    - Sopstvene blogove korisnika
+    - Blogove svih korisnika koje korisnik prati
+    
+    Blog servis može koristiti ovaj endpoint da filtrira blogove koji se prikazuju korisniku.
+    """
+    accessible_authors = service.get_accessible_blogs(user_id)
+    
+    return {
+        "user_id": user_id,
+        "accessible_authors": accessible_authors,
+        "count": len(accessible_authors)
+    }
+
+
+@router.get("/who-can-comment/{blog_author_id}")
+async def get_users_who_can_comment(
+    blog_author_id: int,
+    service: FollowerService = Depends(get_follower_service)
+):
+    """
+    Vraća listu ID-jeva korisnika koji mogu komentarisati blogove određenog autora.
+    
+    **Pravilo (KT2)**: Samo korisnici koji prate autora mogu komentarisati njegove blogove.
+    
+    Blog servis može koristiti ovaj endpoint da validira komentar pre dodavanja.
+    """
+    can_comment_users = service.get_users_who_can_comment_on_blog(blog_author_id)
+    
+    return {
+        "blog_author_id": blog_author_id,
+        "can_comment_users": can_comment_users,
+        "count": len(can_comment_users)
     }

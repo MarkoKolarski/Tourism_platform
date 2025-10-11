@@ -55,3 +55,26 @@ class FollowRecommendationsResponse(BaseModel):
     user_id: int
     recommendations: List[FollowerResponse]
     count: int
+
+
+class CanReadBlogResponse(BaseModel):
+    """Schema za proveru da li korisnik može da čita blog"""
+    reader_id: int
+    blog_author_id: int
+    can_read: bool
+    reason: str
+
+
+class CanCommentBlogResponse(BaseModel):
+    """Schema za proveru da li korisnik može da komentariše blog"""
+    commenter_id: int
+    blog_author_id: int
+    can_comment: bool
+    reason: str
+
+
+class AccessibleBlogsResponse(BaseModel):
+    """Schema za listu blogova koje korisnik može da čita"""
+    user_id: int
+    accessible_authors: List[int]
+    count: int
