@@ -8,7 +8,7 @@
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
-        CREATE TYPE userrole AS ENUM ('admin', 'vodic', 'turista');
+        CREATE TYPE userrole AS ENUM ('ADMIN', 'VODIC', 'TURISTA');
     END IF;
 END $$;
 
@@ -43,5 +43,30 @@ VALUES (
     'ADMIN'::userrole,
     'System',
     'Administrator',
+    FALSE
+) ON CONFLICT (username) DO NOTHING;
+
+-- Insertovanje test turista korisnika (lozinka: test123)
+INSERT INTO users (username, email, password_hash, role, first_name, last_name, is_blocked) 
+VALUES (
+    'testuser', 
+    'testuser@tourism.com', 
+    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- test123
+    'TURISTA'::userrole,
+    'Test',
+    'User',
+    FALSE
+) ON CONFLICT (username) DO NOTHING;
+
+-- Insertovanje test vodič korisnika (lozinka: vodic123)
+INSERT INTO users (username, email, password_hash, role, first_name, last_name, biography, is_blocked) 
+VALUES (
+    'vodic1', 
+    'vodic@tourism.com', 
+    '$2b$12$vI8aWBnW3fID.ZQ4/zo1G.q1lRwq5/DgL6MzqQn5dMY6EiA9L0eMi', -- vodic123
+    'VODIC'::userrole,
+    'Marko',
+    'Petrović',
+    'Iskusni vodič sa više od 10 godina iskustva u turizmu.',
     FALSE
 ) ON CONFLICT (username) DO NOTHING;
