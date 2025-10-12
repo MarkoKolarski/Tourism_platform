@@ -117,15 +117,11 @@ export default function UsersPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                👥 Stakeholders Service
+                Moj Profil
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
                 Upravljanje korisnicima - Ulogovani kao <span className="font-semibold text-blue-600">{currentUser?.username}</span>
               </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="badge badge-success">Port 8001</div>
-              <div className="badge badge-primary">PostgreSQL</div>
             </div>
           </div>
         </div>
@@ -304,14 +300,14 @@ export default function UsersPage() {
                       disabled={loading}
                       className="btn btn-success flex-1"
                     >
-                      {loading ? "Čuvanje..." : "💾 Sačuvaj Izmene"}
+                      {loading ? "Čuvanje..." : "Sačuvaj Izmene"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditing(false)}
                       className="btn btn-secondary flex-1"
                     >
-                      ❌ Otkaži
+                      Otkaži
                     </button>
                   </div>
                 </form>

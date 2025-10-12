@@ -15,7 +15,7 @@ Ako bilo koji korak ne uspe, pokreće se kompenzacija (rollback).
 import httpx
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
 from app.models.purchase import (
@@ -81,7 +81,7 @@ class SagaOrchestrator:
             self.saga_transaction.status = OrderStatus.FAILED
             self.saga_transaction.error_message = error
         
-        self.saga_transaction.updated_at = datetime.utcnow()
+        self.saga_transaction.updated_at = datetime.now(timezone.utc)
         self.db.commit()
     
     def log_compensation(self, step_name: str, action: str):
@@ -166,7 +166,7 @@ class SagaOrchestrator:
             # === Uspešno završena SAGA ===
             cart.status = OrderStatus.COMPLETED
             self.saga_transaction.status = OrderStatus.COMPLETED
-            self.saga_transaction.completed_at = datetime.utcnow()
+            self.saga_transaction.completed_at = datetime.now(timezone.utc)
             self.saga_transaction.current_step = "completed"
             self.db.commit()
             
@@ -185,7 +185,7 @@ class SagaOrchestrator:
             cart.status = OrderStatus.FAILED
             self.saga_transaction.status = OrderStatus.FAILED
             self.saga_transaction.error_message = error_msg
-            self.saga_transaction.completed_at = datetime.utcnow()
+            self.saga_transaction.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             
             return False, None, error_msg

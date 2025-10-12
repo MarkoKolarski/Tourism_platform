@@ -216,15 +216,11 @@ export default function FollowersPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                🔗 Followers Service
+                🔗 Pratioci
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
                 Graf relacija praćenja - Ulogovani kao <span className="font-semibold text-blue-600">{user?.username}</span>
               </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="badge badge-success">Port 8002</div>
-              <div className="badge badge-primary">Neo4j</div>
             </div>
           </div>
         </div>

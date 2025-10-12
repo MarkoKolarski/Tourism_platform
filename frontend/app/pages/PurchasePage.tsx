@@ -53,6 +53,31 @@ export default function PurchasePage() {
 
   const API_URL = "/api/v1/purchase";
 
+  // Map backend status values to Serbian labels and badge classes
+  const statusToSerbian = (status: string | boolean | undefined) => {
+    const s = String(status ?? '').toLowerCase();
+    switch (s) {
+      case 'pending':
+        return { label: 'Na čekanju', badge: 'badge-warning' };
+      case 'processing':
+        return { label: 'U obradi', badge: 'badge-info' };
+      case 'completed':
+        return { label: 'Završeno', badge: 'badge-success' };
+      case 'failed':
+        return { label: 'Neuspešno', badge: 'badge-danger' };
+      case 'cancelled':
+        return { label: 'Otkazano', badge: 'badge-secondary' };
+      case 'true':
+      case 'active':
+        return { label: 'Aktivan', badge: 'badge-success' };
+      case 'false':
+      case 'inactive':
+        return { label: 'Neaktivan', badge: 'badge-danger' };
+      default:
+        return { label: String(status), badge: 'badge-primary' };
+    }
+  };
+
   // Redirect if not authenticated
   if (!isAuthenticated) {
     navigate("/login");
@@ -209,16 +234,11 @@ export default function PurchasePage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                🛒 Purchase Service
+                🛒 Kupovina
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
                 Shopping korpa - Ulogovani kao <span className="font-semibold text-purple-600">{user?.username}</span>
               </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="badge badge-success">Port 8003</div>
-              <div className="badge badge-primary">PostgreSQL</div>
-              <div className="badge badge-warning">SAGA</div>
             </div>
           </div>
         </div>
@@ -233,7 +253,7 @@ export default function PurchasePage() {
                 : "text-gray-600 dark:text-gray-400"
             }`}
           >
-            🛒 Shopping Korpa
+            🛒 Korpa
           </button>
           <button
             onClick={() => { setActiveTab("tokens"); fetchTokens(); }}
@@ -243,7 +263,7 @@ export default function PurchasePage() {
                 : "text-gray-600 dark:text-gray-400"
             }`}
           >
-            🎫 Purchase Tokeni
+            🎫 Moji Tokeni
           </button>
           <button
             onClick={() => { setActiveTab("transactions"); fetchTransactions(); }}
@@ -253,7 +273,7 @@ export default function PurchasePage() {
                 : "text-gray-600 dark:text-gray-400"
             }`}
           >
-            📊 SAGA Transakcije
+            📊 Istorija Kupovina
           </button>
         </div>
 
@@ -312,9 +332,10 @@ export default function PurchasePage() {
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                       Vaša Korpa
                     </h2>
-                    <span className={`badge ${cart.status === 'active' ? 'badge-success' : 'badge-warning'}`}>
-                      {cart.status}
-                    </span>
+                    {(() => {
+                      const st = statusToSerbian(cart.status);
+                      return <span className={`badge ${st.badge}`}>{st.label}</span>;
+                    })()}
                   </div>
 
                   <div className="space-y-4">
@@ -353,7 +374,7 @@ export default function PurchasePage() {
                       disabled={loading}
                       className="btn btn-success w-full text-lg"
                     >
-                      {loading ? "Procesiranje..." : "Checkout - SAGA Process"}
+                      {loading ? "Procesiranje..." : "Kupi Sada"}
                     </button>
                   </div>
                 </div>
@@ -380,9 +401,10 @@ export default function PurchasePage() {
                 <div key={token.id} className="card">
                   <div className="flex items-start justify-between mb-4">
                     <div className="text-2xl">🎫</div>
-                    <span className={`badge ${token.is_active ? 'badge-success' : 'badge-danger'}`}>
-                      {token.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    {(() => {
+                      const st = statusToSerbian(token.is_active);
+                      return <span className={`badge ${st.badge}`}>{st.label}</span>;
+                    })()}
                   </div>
                   <h3 className="font-bold text-gray-900 dark:text-white mb-2">{token.tour_name}</h3>
                   <div className="space-y-2 text-sm">
@@ -405,10 +427,10 @@ export default function PurchasePage() {
               <div className="col-span-full card text-center py-12">
                 <div className="text-6xl mb-4">🎫</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Nema Purchase Tokena
+                  Nema Tokena
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Završite checkout proces da dobijete tokene
+                  Završite kupovinu da dobijete tokene
                 </p>
               </div>
             )}
@@ -428,18 +450,15 @@ export default function PurchasePage() {
                         {new Date(tx.created_at).toLocaleString()}
                       </p>
                     </div>
-                    <span className={`badge ${
-                      tx.status === 'completed' ? 'badge-success' :
-                      tx.status === 'failed' ? 'badge-danger' :
-                      'badge-warning'
-                    }`}>
-                      {tx.status}
-                    </span>
+                    {(() => {
+                      const st = statusToSerbian(tx.status);
+                      return <span className={`badge ${st.badge}`}>{st.label}</span>;
+                    })()}
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Completed Steps:</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Završeni Koraci:</h4>
                       <ul className="space-y-1">
                         {Array.isArray(tx.steps_completed) && tx.steps_completed.map((step, idx) => (
                           <li key={idx} className="text-sm text-green-600 dark:text-green-400 flex items-center">
@@ -454,7 +473,7 @@ export default function PurchasePage() {
 
                     {Array.isArray(tx.compensation_log) && tx.compensation_log.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Compensation Log:</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Log Kompenzacije:</h4>
                         <ul className="space-y-1">
                           {tx.compensation_log.map((log, idx) => (
                             <li key={idx} className="text-sm text-orange-600 dark:text-orange-400">• {log}</li>
@@ -478,7 +497,7 @@ export default function PurchasePage() {
                   Nema Transakcija
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Vaše SAGA transakcije će se prikazati ovde
+                  Vaše transakcije će se prikazati ovde
                 </p>
               </div>
             )}
