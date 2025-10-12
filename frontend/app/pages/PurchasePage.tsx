@@ -75,16 +75,26 @@ export default function PurchasePage() {
     }
   };
 
-  const addToCart = async (tourId: number, tourName: string, price: number, quantity: number) => {
+  const addToCart = async (tourName: string, price: number, quantity: number) => {
     setLoading(true);
     try {
+      // Automatski odabir sledećeg dostupnog Tour ID-a
+      const nextTourId = cart && cart.items.length > 0 
+        ? Math.max(...cart.items.map(item => item.tour_id)) + 1 
+        : 1;
+      
       const response = await fetch(`${API_URL}/cart/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${user?.token}`
         },
-        body: JSON.stringify({ tour_id: tourId, quantity })
+        body: JSON.stringify({ 
+          tour_id: nextTourId, 
+          tour_name: tourName,
+          tour_price: price,
+          quantity 
+        })
       });
       
       if (response.ok) {
@@ -261,7 +271,6 @@ export default function PurchasePage() {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     addToCart(
-                      parseInt(formData.get("tourId") as string),
                       formData.get("tourName") as string,
                       parseFloat(formData.get("price") as string),
                       parseInt(formData.get("quantity") as string)
@@ -270,12 +279,6 @@ export default function PurchasePage() {
                   }}
                   className="space-y-4"
                 >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tour ID
-                    </label>
-                    <input type="number" name="tourId" className="input" required />
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Naziv Ture
@@ -298,17 +301,6 @@ export default function PurchasePage() {
                     Dodaj u Korpu
                   </button>
                 </form>
-
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="font-bold text-purple-900 dark:text-purple-200 mb-2">SAGA Pattern</h3>
-                  <ul className="text-sm text-purple-800 dark:text-purple-300 space-y-1">
-                    <li>✓ Validate User</li>
-                    <li>✓ Reserve Tours</li>
-                    <li>✓ Process Payment</li>
-                    <li>✓ Generate Tokens</li>
-                    <li>✓ Update Stats</li>
-                  </ul>
-                </div>
               </div>
             </div>
 

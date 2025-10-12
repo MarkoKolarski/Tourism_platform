@@ -20,20 +20,35 @@ interface Recommendation {
   mutual_friends: number;
 }
 
+interface AllUser {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+  profile_image?: string;
+  biography?: string;
+  motto?: string;
+  is_blocked: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function FollowersPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<FollowStats | null>(null);
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [following, setFollowing] = useState<Follower[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [allUsers, setAllUsers] = useState<AllUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"followers" | "following" | "recommendations">("followers");
-
-  // Follow/Unfollow state
-  const [followingId, setFollowingId] = useState("");
+  const [activeTab, setActiveTab] = useState<"followers" | "following" | "recommendations" | "all">("followers");
+  const [followingInProgress, setFollowingInProgress] = useState<number | null>(null);
 
   const API_URL = "http://localhost:8002/api/followers";
+  const USERS_API_URL = "http://localhost:8001/api/users";
 
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -81,26 +96,34 @@ export default function FollowersPage() {
     }
   };
 
-  const handleFollow = async () => {
-    if (!followingId) {
-      alert("Unesite ID korisnika za praćenje");
-      return;
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch(`${USERS_API_URL}/all`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setAllUsers(data);
+    } catch (error) {
+      console.error("Error fetching all users:", error);
     }
+  };
 
-    setLoading(true);
+  const handleFollow = async (followingUserId: number) => {
+    setFollowingInProgress(followingUserId);
     try {
       const response = await fetch(`${API_URL}/follow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           follower_id: user?.id,
-          following_id: parseInt(followingId)
+          following_id: followingUserId
         })
       });
 
       if (response.ok) {
         alert("Uspešno zapraćen korisnik!");
-        setFollowingId("");
         // Refresh data
         if (user?.id) {
           await loadUserData(user.id.toString());
@@ -113,30 +136,24 @@ export default function FollowersPage() {
       console.error("Error following user:", error);
       alert("Greška pri praćenju");
     } finally {
-      setLoading(false);
+      setFollowingInProgress(null);
     }
   };
 
-  const handleUnfollow = async () => {
-    if (!followingId) {
-      alert("Unesite ID korisnika");
-      return;
-    }
-
-    setLoading(true);
+  const handleUnfollow = async (followingUserId: number) => {
+    setFollowingInProgress(followingUserId);
     try {
       const response = await fetch(`${API_URL}/unfollow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           follower_id: user?.id,
-          following_id: parseInt(followingId)
+          following_id: followingUserId
         })
       });
 
       if (response.ok) {
         alert("Uspešno otpraćen korisnik!");
-        setFollowingId("");
         // Refresh data
         if (user?.id) {
           await loadUserData(user.id.toString());
@@ -148,7 +165,7 @@ export default function FollowersPage() {
     } catch (error) {
       console.error("Error unfollowing user:", error);
     } finally {
-      setLoading(false);
+      setFollowingInProgress(null);
     }
   };
 
@@ -159,7 +176,8 @@ export default function FollowersPage() {
         fetchStats(uid),
         fetchFollowers(uid),
         fetchFollowing(uid),
-        fetchRecommendations(uid)
+        fetchRecommendations(uid),
+        fetchAllUsers()
       ]);
     } finally {
       setLoading(false);
@@ -172,6 +190,11 @@ export default function FollowersPage() {
       loadUserData(user.id.toString());
     }
   }, [user?.id]);
+
+  // Check if user is already being followed
+  const isFollowing = (userId: number) => {
+    return following.some(f => f.user_id === userId);
+  };
 
   return (
     <Layout>
@@ -201,7 +224,7 @@ export default function FollowersPage() {
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column - Stats & Actions */}
+            {/* Left Column - Stats */}
             <div className="lg:col-span-1 space-y-6">
               {/* Stats Card */}
               {stats && (
@@ -225,54 +248,6 @@ export default function FollowersPage() {
                   </div>
                 </div>
               )}
-
-              {/* Follow/Unfollow Actions */}
-              <div className="card">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                  Zaprati Korisnika
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      User ID
-                    </label>
-                    <input
-                      type="number"
-                      className="input"
-                      value={followingId}
-                      onChange={(e) => setFollowingId(e.target.value)}
-                      placeholder="Unesite User ID"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={handleFollow} 
-                      className="btn btn-success"
-                      disabled={!followingId}
-                    >
-                      Zaprati
-                    </button>
-                    <button 
-                      onClick={handleUnfollow} 
-                      className="btn btn-danger"
-                      disabled={!followingId}
-                    >
-                      Otprati
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info Card */}
-              <div className="card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-                <h3 className="font-bold text-blue-900 dark:text-blue-200 mb-2">Funkcionalnosti</h3>
-                <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                  <li>• Zaprati druge korisnike</li>
-                  <li>• Vidi ko te prati</li>
-                  <li>• Preporuke za praćenje</li>
-                  <li>• Zajedničke veze</li>
-                </ul>
-              </div>
             </div>
 
             {/* Right Column - Lists */}
@@ -310,6 +285,16 @@ export default function FollowersPage() {
                   >
                     Preporuke ({recommendations.length})
                   </button>
+                  <button
+                    onClick={() => setActiveTab("all")}
+                    className={`px-4 py-2 font-medium -mb-px ${
+                      activeTab === "all"
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-600 dark:text-gray-400"
+                    }`}
+                  >
+                    Svi Korisnici ({allUsers.length})
+                  </button>
                 </div>
 
                 {/* Tab Content */}
@@ -323,11 +308,19 @@ export default function FollowersPage() {
                               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                                 {follower.username[0].toUpperCase()}
                               </div>
-                              <div>
-                                <div className="font-semibold text-gray-900 dark:text-white">{follower.username}</div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">ID: {follower.user_id}</div>
+                              <div className="font-semibold text-gray-900 dark:text-white">
+                                {follower.username}
                               </div>
                             </div>
+                            {!isFollowing(follower.user_id) && (
+                              <button
+                                onClick={() => handleFollow(follower.user_id)}
+                                disabled={followingInProgress === follower.user_id}
+                                className="btn btn-primary btn-sm"
+                              >
+                                {followingInProgress === follower.user_id ? "..." : "Zaprati"}
+                              </button>
+                            )}
                           </div>
                         ))
                       ) : (
@@ -347,10 +340,24 @@ export default function FollowersPage() {
                               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                                 {user.username[0].toUpperCase()}
                               </div>
-                              <div>
-                                <div className="font-semibold text-gray-900 dark:text-white">{user.username}</div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">ID: {user.user_id}</div>
+                              <div className="font-semibold text-gray-900 dark:text-white">
+                                {user.username}
                               </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                className="btn btn-primary btn-sm"
+                                title="Pogledaj blog korisnika (dostupno uskoro)"
+                              >
+                                📝 Blog
+                              </button>
+                              <button
+                                onClick={() => handleUnfollow(user.user_id)}
+                                disabled={followingInProgress === user.user_id}
+                                className="btn btn-danger btn-sm"
+                              >
+                                {followingInProgress === user.user_id ? "..." : "Otprati"}
+                              </button>
                             </div>
                           </div>
                         ))
@@ -373,24 +380,82 @@ export default function FollowersPage() {
                           </div>
                           {recommendations.map((rec) => (
                             <div key={rec.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                              <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-3 flex-1">
                                 <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                                   {rec.username[0].toUpperCase()}
                                 </div>
-                                <div>
+                                <div className="flex-1">
                                   <div className="font-semibold text-gray-900 dark:text-white">{rec.username}</div>
                                   <div className="text-sm text-gray-600 dark:text-gray-400">
                                     {rec.mutual_friends} {rec.mutual_friends === 1 ? 'zajednički prijatelj' : 'zajedničkih prijatelja'}
                                   </div>
                                 </div>
+                                <span className="badge badge-primary">{rec.mutual_friends}</span>
                               </div>
-                              <span className="badge badge-primary">{rec.mutual_friends}</span>
+                              {!isFollowing(rec.user_id) && (
+                                <button
+                                  onClick={() => handleFollow(rec.user_id)}
+                                  disabled={followingInProgress === rec.user_id}
+                                  className="btn btn-success btn-sm ml-4"
+                                >
+                                  {followingInProgress === rec.user_id ? "..." : "Zaprati"}
+                                </button>
+                              )}
                             </div>
                           ))}
                         </>
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                           Nema preporuka za sada
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {activeTab === "all" && (
+                    <>
+                      <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <p className="text-sm text-orange-800 dark:text-orange-300">
+                          👥 Svi korisnici u sistemu - možete zapratiti korisnike koje još ne pratite
+                        </p>
+                      </div>
+                      {allUsers.length > 0 ? (
+                        allUsers.map((usr) => (
+                          <div key={usr.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                {usr.username[0].toUpperCase()}
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-900 dark:text-white">{usr.username}</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  {usr.first_name && usr.last_name ? `${usr.first_name} ${usr.last_name}` : usr.email}
+                                </div>
+                              </div>
+                              <span className="badge badge-secondary capitalize">{usr.role}</span>
+                            </div>
+                            {!isFollowing(usr.id) ? (
+                              <button
+                                onClick={() => handleFollow(usr.id)}
+                                disabled={followingInProgress === usr.id}
+                                className="btn btn-success btn-sm ml-4"
+                              >
+                                {followingInProgress === usr.id ? "..." : "Zaprati"}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleUnfollow(usr.id)}
+                                disabled={followingInProgress === usr.id}
+                                className="btn btn-danger btn-sm ml-4"
+                              >
+                                {followingInProgress === usr.id ? "..." : "Otprati"}
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          Nema drugih korisnika
                         </div>
                       )}
                     </>

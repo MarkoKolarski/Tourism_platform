@@ -76,6 +76,8 @@ def add_to_cart(
     
     **Parametri:**
     - `tour_id`: ID ture koja se dodaje
+    - `tour_name`: Naziv ture (opciono, default: "Tour #ID")
+    - `tour_price`: Cena ture (opciono, default: 100.0)
     - `quantity`: Broj osoba (default: 1)
     
     Tura mora postojati i mora biti aktivna (ne arhivirana).
@@ -85,9 +87,9 @@ def add_to_cart(
     # TODO: U produkciji, ovde treba validacija da tura postoji
     # Poziv Tours servisa da dobije informacije o turi
     
-    # Simulirane informacije o turi
-    tour_name = f"Tour #{request.tour_id}"
-    tour_price = 100.0  # Placeholder
+    # Koristi vrednosti iz requesta ili placeholders
+    tour_name = request.tour_name or f"Tour #{request.tour_id}"
+    tour_price = request.tour_price or 100.0
     
     cart, item = service.add_to_cart(
         user_id=current_user_id,
