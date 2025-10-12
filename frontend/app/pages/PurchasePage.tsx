@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
@@ -184,6 +184,13 @@ export default function PurchasePage() {
     }
   };
 
+  // Automatski učitaj cart kada se komponenta mountuje
+  useEffect(() => {
+    if (activeTab === "cart") {
+      fetchCart();
+    }
+  }, []);
+
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -307,7 +314,7 @@ export default function PurchasePage() {
 
             {/* Cart Display */}
             <div className="lg:col-span-2">
-              {cart && cart.items && cart.items.length > 0 ? (
+              {cart && Array.isArray(cart.items) && cart.items.length > 0 ? (
                 <div className="card">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -376,7 +383,7 @@ export default function PurchasePage() {
         {/* Tokens Tab */}
         {activeTab === "tokens" && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tokens.length > 0 ? (
+            {Array.isArray(tokens) && tokens.length > 0 ? (
               tokens.map((token) => (
                 <div key={token.id} className="card">
                   <div className="flex items-start justify-between mb-4">
@@ -419,7 +426,7 @@ export default function PurchasePage() {
         {/* Transactions Tab */}
         {activeTab === "transactions" && (
           <div className="space-y-6">
-            {transactions.length > 0 ? (
+            {Array.isArray(transactions) && transactions.length > 0 ? (
               transactions.map((tx) => (
                 <div key={tx.id} className="card">
                   <div className="flex items-start justify-between mb-4">
@@ -442,7 +449,7 @@ export default function PurchasePage() {
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Completed Steps:</h4>
                       <ul className="space-y-1">
-                        {tx.steps_completed.map((step, idx) => (
+                        {Array.isArray(tx.steps_completed) && tx.steps_completed.map((step, idx) => (
                           <li key={idx} className="text-sm text-green-600 dark:text-green-400 flex items-center">
                             <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -453,7 +460,7 @@ export default function PurchasePage() {
                       </ul>
                     </div>
 
-                    {tx.compensation_log.length > 0 && (
+                    {Array.isArray(tx.compensation_log) && tx.compensation_log.length > 0 && (
                       <div>
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Compensation Log:</h4>
                         <ul className="space-y-1">
