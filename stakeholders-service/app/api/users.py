@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -54,6 +54,97 @@ def get_current_user(
         )
     
     return user
+
+
+def require_admin(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+) -> User:
+    """Proverava da li je korisnik admin preko Authorization headera"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token nije prosleđen"
+        )
+    
+    token = authorization.replace("Bearer ", "")
+    payload = verify_token(token)
+    
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nevažeći token"
+        )
+    
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token ne sadrži user ID"
+        )
+    
+    user_service = UserService(db)
+    user = user_service.get_user_by_id(user_id)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Korisnik nije pronađen"
+        )
+    
+    if user.role.value != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Samo admin može izvršiti ovu akciju"
+        )
+    
+    return user
+
+
+@router.put("/block/{user_id}", response_model=UserResponse)
+async def block_user(
+    user_id: int,
+    admin_user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Blokira korisnički nalog (samo admin).
+    Ne može blokirati druge admine.
+    """
+    # Proveri da li je admin_user_id stvarno admin
+    user_service = UserService(db)
+    admin_user = user_service.get_user_by_id(admin_user_id)
+    if not admin_user or admin_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Samo admin može blokirati korisnike")
+    
+    # Dobij korisnika za blokiranje
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+    if user.role.value == "admin":
+        raise HTTPException(status_code=403, detail="Nije dozvoljeno blokirati admin nalog")
+    if user.is_blocked:
+        raise HTTPException(status_code=400, detail="Korisnik je već blokiran")
+    
+    user.is_blocked = True
+    db.commit()
+    db.refresh(user)
+    
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        profile_image=user.profile_image,
+        biography=user.biography,
+        motto=user.motto,
+        is_blocked=user.is_blocked,
+        is_active=not user.is_blocked,
+        created_at=user.created_at,
+        updated_at=user.updated_at
+    )
 
 
 @router.post("/login", response_model=UserLoginResponse)

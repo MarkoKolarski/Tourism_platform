@@ -78,6 +78,23 @@ services:
       - tourism-network
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tourism-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - STAKEHOLDERS_SERVICE_URL=http://localhost:8001
+      - FOLLOWERS_SERVICE_URL=http://localhost:8002
+      - PURCHASE_SERVICE_URL=http://localhost:8003
+    networks:
+      - tourism-network
+    restart: unless-stopped
+
 volumes:
   neo4j_data:
   neo4j_logs:

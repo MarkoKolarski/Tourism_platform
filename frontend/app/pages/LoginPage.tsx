@@ -42,6 +42,7 @@ export default function LoginPage() {
           id: data.user.id,
           username: data.user.username,
           email: data.user.email,
+          role: data.user.role,
           token: data.access_token,
         });
         
@@ -71,6 +72,7 @@ export default function LoginPage() {
           id: data.user.id,
           username: data.user.username,
           email: data.user.email,
+          role: data.user.role,
           token: data.access_token,
         });
         
