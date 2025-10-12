@@ -173,6 +173,38 @@ async def get_current_user_profile(
     }
 
 
+@router.get("/all", response_model=list[UserResponse])
+async def get_all_users(
+    db: Session = Depends(get_db)
+):
+    """
+    Dobijanje liste svih korisnika
+    
+    Vraća sve korisnike iz sistema.
+    Koristi se za prikaz svih korisnika koje možete da zapratite.
+    """
+    users = db.query(User).all()
+    
+    return [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role.value if hasattr(user.role, 'value') else user.role,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "profile_image": user.profile_image,
+            "biography": user.biography,
+            "motto": user.motto,
+            "is_blocked": user.is_blocked,
+            "is_active": not user.is_blocked,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at
+        }
+        for user in users
+    ]
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,

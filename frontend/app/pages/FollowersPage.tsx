@@ -46,6 +46,7 @@ export default function FollowersPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"followers" | "following" | "recommendations" | "all">("followers");
   const [followingInProgress, setFollowingInProgress] = useState<number | null>(null);
+  const [displayedUsersCount, setDisplayedUsersCount] = useState(10); // Početni broj prikazanih korisnika
 
   const API_URL = "http://localhost:8002/api/followers";
   const USERS_API_URL = "http://localhost:8001/api/users";
@@ -104,9 +105,11 @@ export default function FollowersPage() {
         }
       });
       const data = await response.json();
-      setAllUsers(data);
+      // Ensure data is always an array
+      setAllUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching all users:", error);
+      setAllUsers([]);
     }
   };
 
@@ -194,6 +197,15 @@ export default function FollowersPage() {
   // Check if user is already being followed
   const isFollowing = (userId: number) => {
     return following.some(f => f.user_id === userId);
+  };
+
+  // Filter out current user and get paginated users
+  const filteredAllUsers = allUsers.filter(u => u.id !== user?.id);
+  const displayedUsers = filteredAllUsers.slice(0, displayedUsersCount);
+  const hasMoreUsers = displayedUsersCount < filteredAllUsers.length;
+
+  const loadMoreUsers = () => {
+    setDisplayedUsersCount(prev => Math.min(prev + 10, filteredAllUsers.length));
   };
 
   return (
@@ -293,7 +305,7 @@ export default function FollowersPage() {
                         : "text-gray-600 dark:text-gray-400"
                     }`}
                   >
-                    Svi Korisnici ({allUsers.length})
+                    Svi Korisnici ({filteredAllUsers.length})
                   </button>
                 </div>
 
@@ -418,41 +430,56 @@ export default function FollowersPage() {
                         <p className="text-sm text-orange-800 dark:text-orange-300">
                           👥 Svi korisnici u sistemu - možete zapratiti korisnike koje još ne pratite
                         </p>
+                        <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                          Prikazano {displayedUsers.length} od {filteredAllUsers.length} korisnika
+                        </p>
                       </div>
-                      {allUsers.length > 0 ? (
-                        allUsers.map((usr) => (
-                          <div key={usr.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                {usr.username[0].toUpperCase()}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-semibold text-gray-900 dark:text-white">{usr.username}</div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">
-                                  {usr.first_name && usr.last_name ? `${usr.first_name} ${usr.last_name}` : usr.email}
+                      {displayedUsers.length > 0 ? (
+                        <>
+                          {displayedUsers.map((usr) => (
+                            <div key={usr.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                  {usr.username[0].toUpperCase()}
                                 </div>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-900 dark:text-white">{usr.username}</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    {usr.first_name && usr.last_name ? `${usr.first_name} ${usr.last_name}` : usr.email}
+                                  </div>
+                                </div>
+                                <span className="badge badge-secondary capitalize">{usr.role}</span>
                               </div>
-                              <span className="badge badge-secondary capitalize">{usr.role}</span>
+                              {!isFollowing(usr.id) ? (
+                                <button
+                                  onClick={() => handleFollow(usr.id)}
+                                  disabled={followingInProgress === usr.id}
+                                  className="btn btn-success btn-sm ml-4"
+                                >
+                                  {followingInProgress === usr.id ? "..." : "Zaprati"}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleUnfollow(usr.id)}
+                                  disabled={followingInProgress === usr.id}
+                                  className="btn btn-danger btn-sm ml-4"
+                                >
+                                  {followingInProgress === usr.id ? "..." : "Otprati"}
+                                </button>
+                              )}
                             </div>
-                            {!isFollowing(usr.id) ? (
+                          ))}
+                          {hasMoreUsers && (
+                            <div className="pt-4 text-center">
                               <button
-                                onClick={() => handleFollow(usr.id)}
-                                disabled={followingInProgress === usr.id}
-                                className="btn btn-success btn-sm ml-4"
+                                onClick={loadMoreUsers}
+                                className="btn btn-primary"
                               >
-                                {followingInProgress === usr.id ? "..." : "Zaprati"}
+                                Učitaj još ({filteredAllUsers.length - displayedUsersCount} preostalo)
                               </button>
-                            ) : (
-                              <button
-                                onClick={() => handleUnfollow(usr.id)}
-                                disabled={followingInProgress === usr.id}
-                                className="btn btn-danger btn-sm ml-4"
-                              >
-                                {followingInProgress === usr.id ? "..." : "Otprati"}
-                              </button>
-                            )}
-                          </div>
-                        ))
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                           Nema drugih korisnika
