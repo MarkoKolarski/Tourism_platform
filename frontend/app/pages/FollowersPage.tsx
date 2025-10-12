@@ -199,8 +199,8 @@ export default function FollowersPage() {
     return following.some(f => f.user_id === userId);
   };
 
-  // Filter out current user and get paginated users
-  const filteredAllUsers = allUsers.filter(u => u.id !== user?.id);
+  // Filter out current user and admin users, then get paginated users
+  const filteredAllUsers = allUsers.filter(u => u.id !== user?.id && u.role !== 'admin');
   const displayedUsers = filteredAllUsers.slice(0, displayedUsersCount);
   const hasMoreUsers = displayedUsersCount < filteredAllUsers.length;
 
@@ -314,27 +314,44 @@ export default function FollowersPage() {
                   {activeTab === "followers" && (
                     <>
                       {followers.length > 0 ? (
-                        followers.map((follower) => (
-                          <div key={follower.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                {follower.username[0].toUpperCase()}
+                        followers.map((follower) => {
+                          // Pronađi full user info iz allUsers liste
+                          const fullUserInfo = allUsers.find(u => u.id === follower.user_id);
+                          
+                          return (
+                            <div key={follower.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                  {follower.username[0].toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-900 dark:text-white">
+                                    {follower.username}
+                                  </div>
+                                  {fullUserInfo && (
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                      {fullUserInfo.first_name && fullUserInfo.last_name 
+                                        ? `${fullUserInfo.first_name} ${fullUserInfo.last_name}` 
+                                        : fullUserInfo.email}
+                                    </div>
+                                  )}
+                                </div>
+                                {fullUserInfo && (
+                                  <span className="badge badge-secondary capitalize">{fullUserInfo.role}</span>
+                                )}
                               </div>
-                              <div className="font-semibold text-gray-900 dark:text-white">
-                                {follower.username}
-                              </div>
+                              {!isFollowing(follower.user_id) && (
+                                <button
+                                  onClick={() => handleFollow(follower.user_id)}
+                                  disabled={followingInProgress === follower.user_id}
+                                  className="btn btn-primary btn-sm ml-4"
+                                >
+                                  {followingInProgress === follower.user_id ? "..." : "Zaprati"}
+                                </button>
+                              )}
                             </div>
-                            {!isFollowing(follower.user_id) && (
-                              <button
-                                onClick={() => handleFollow(follower.user_id)}
-                                disabled={followingInProgress === follower.user_id}
-                                className="btn btn-primary btn-sm"
-                              >
-                                {followingInProgress === follower.user_id ? "..." : "Zaprati"}
-                              </button>
-                            )}
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                           Nemate pratioce
@@ -346,33 +363,50 @@ export default function FollowersPage() {
                   {activeTab === "following" && (
                     <>
                       {following.length > 0 ? (
-                        following.map((user) => (
-                          <div key={user.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                {user.username[0].toUpperCase()}
+                        following.map((user) => {
+                          // Pronađi full user info iz allUsers liste
+                          const fullUserInfo = allUsers.find(u => u.id === user.user_id);
+                          
+                          return (
+                            <div key={user.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                  {user.username[0].toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-900 dark:text-white">
+                                    {user.username}
+                                  </div>
+                                  {fullUserInfo && (
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                      {fullUserInfo.first_name && fullUserInfo.last_name 
+                                        ? `${fullUserInfo.first_name} ${fullUserInfo.last_name}` 
+                                        : fullUserInfo.email}
+                                    </div>
+                                  )}
+                                </div>
+                                {fullUserInfo && (
+                                  <span className="badge badge-secondary capitalize">{fullUserInfo.role}</span>
+                                )}
                               </div>
-                              <div className="font-semibold text-gray-900 dark:text-white">
-                                {user.username}
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  title="Pogledaj blog korisnika (dostupno uskoro)"
+                                >
+                                  📝 Blog
+                                </button>
+                                <button
+                                  onClick={() => handleUnfollow(user.user_id)}
+                                  disabled={followingInProgress === user.user_id}
+                                  className="btn btn-danger btn-sm"
+                                >
+                                  {followingInProgress === user.user_id ? "..." : "Otprati"}
+                                </button>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                className="btn btn-primary btn-sm"
-                                title="Pogledaj blog korisnika (dostupno uskoro)"
-                              >
-                                📝 Blog
-                              </button>
-                              <button
-                                onClick={() => handleUnfollow(user.user_id)}
-                                disabled={followingInProgress === user.user_id}
-                                className="btn btn-danger btn-sm"
-                              >
-                                {followingInProgress === user.user_id ? "..." : "Otprati"}
-                              </button>
-                            </div>
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                           Ne pratite nikoga
@@ -390,31 +424,45 @@ export default function FollowersPage() {
                               💡 Preporuke su zasnovane na zajedničkim vezama - korisnici koje prate ljudi koje vi pratite
                             </p>
                           </div>
-                          {recommendations.map((rec) => (
-                            <div key={rec.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                              <div className="flex items-center space-x-3 flex-1">
-                                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                  {rec.username[0].toUpperCase()}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="font-semibold text-gray-900 dark:text-white">{rec.username}</div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                                    {rec.mutual_friends} {rec.mutual_friends === 1 ? 'zajednički prijatelj' : 'zajedničkih prijatelja'}
+                          {recommendations.map((rec) => {
+                            // Pronađi full user info iz allUsers liste
+                            const fullUserInfo = allUsers.find(u => u.id === rec.user_id);
+                            
+                            return (
+                              <div key={rec.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    {rec.username[0].toUpperCase()}
                                   </div>
+                                  <div className="flex-1">
+                                    <div className="font-semibold text-gray-900 dark:text-white">{rec.username}</div>
+                                    {fullUserInfo && (
+                                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                                        {fullUserInfo.first_name && fullUserInfo.last_name 
+                                          ? `${fullUserInfo.first_name} ${fullUserInfo.last_name}` 
+                                          : fullUserInfo.email}
+                                      </div>
+                                    )}
+                                    <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                                      {rec.mutual_friends} {rec.mutual_friends === 1 ? 'zajednički prijatelj' : 'zajedničkih prijatelja'}
+                                    </div>
+                                  </div>
+                                  {fullUserInfo && (
+                                    <span className="badge badge-secondary capitalize">{fullUserInfo.role}</span>
+                                  )}
                                 </div>
-                                <span className="badge badge-primary">{rec.mutual_friends}</span>
+                                {!isFollowing(rec.user_id) && (
+                                  <button
+                                    onClick={() => handleFollow(rec.user_id)}
+                                    disabled={followingInProgress === rec.user_id}
+                                    className="btn btn-success btn-sm ml-4"
+                                  >
+                                    {followingInProgress === rec.user_id ? "..." : "Zaprati"}
+                                  </button>
+                                )}
                               </div>
-                              {!isFollowing(rec.user_id) && (
-                                <button
-                                  onClick={() => handleFollow(rec.user_id)}
-                                  disabled={followingInProgress === rec.user_id}
-                                  className="btn btn-success btn-sm ml-4"
-                                >
-                                  {followingInProgress === rec.user_id ? "..." : "Zaprati"}
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </>
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
