@@ -51,7 +51,7 @@ export default function PurchasePage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"cart" | "tokens" | "transactions">("cart");
 
-  const API_URL = "http://localhost:8003/api/purchase";
+  const API_URL = "/api/v1/purchase";
 
   // Redirect if not authenticated
   if (!isAuthenticated) {

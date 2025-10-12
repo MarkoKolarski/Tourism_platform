@@ -48,8 +48,8 @@ export default function FollowersPage() {
   const [followingInProgress, setFollowingInProgress] = useState<number | null>(null);
   const [displayedUsersCount, setDisplayedUsersCount] = useState(10); // Početni broj prikazanih korisnika
 
-  const API_URL = "http://localhost:8002/api/followers";
-  const USERS_API_URL = "http://localhost:8001/api/users";
+  const API_URL = "/api/v1/followers";
+  const USERS_API_URL = "/api/v1/users";
 
   // Redirect if not authenticated
   if (!isAuthenticated) {

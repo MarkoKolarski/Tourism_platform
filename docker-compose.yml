@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  # API Gateway - Nginx reverse proxy
+  gateway:
+    image: nginx:alpine
+    container_name: tourism-gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - stakeholders-service
+      - followers-service
+      - purchase-service
+      - frontend
+    networks:
+      - tourism-network
+    restart: unless-stopped
+
   # Neo4j baza za Followers Service
   neo4j:
     image: neo4j:latest
@@ -27,8 +44,7 @@ services:
       context: ./followers-service
       dockerfile: Dockerfile
     container_name: tourism-followers-service
-    ports:
-      - "8002:8002"
+    # Port removed - access through gateway only
     environment:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
@@ -48,8 +64,7 @@ services:
       context: ./stakeholders-service
       dockerfile: Dockerfile
     container_name: tourism-stakeholders-service
-    ports:
-      - "8001:8001"
+    # Port removed - access through gateway only
     environment:
       - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_stakeholders
       - SECRET_KEY=dev-secret-key-change-in-production
@@ -64,8 +79,7 @@ services:
       context: ./purchase-service
       dockerfile: Dockerfile
     container_name: tourism-purchase-service
-    ports:
-      - "8003:8003"
+    # Port removed - access through gateway only
     environment:
       - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_purchase
       - SECRET_KEY=dev-secret-key-change-in-production
@@ -83,14 +97,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: tourism-frontend
-    ports:
-      - "3000:3000"
+    # Port removed - access through gateway only
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - STAKEHOLDERS_SERVICE_URL=http://localhost:8001
-      - FOLLOWERS_SERVICE_URL=http://localhost:8002
-      - PURCHASE_SERVICE_URL=http://localhost:8003
+      # Updated to use gateway instead of direct service access
+      - STAKEHOLDERS_SERVICE_URL=http://localhost/api/v1
+      - FOLLOWERS_SERVICE_URL=http://localhost/api/v1
+      - PURCHASE_SERVICE_URL=http://localhost/api/v1
     networks:
       - tourism-network
     restart: unless-stopped
