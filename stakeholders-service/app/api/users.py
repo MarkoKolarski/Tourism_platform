@@ -4,16 +4,62 @@ from app.core.database import get_db
 from app.services.user_service import UserService
 from app.schemas.user import (
     UserCreate, 
-    UserCreateResponse, 
+    UserCreateResponse,
+    UserLogin,
+    UserLoginResponse,
     UserProfileUpdate, 
     UserProfileUpdateResponse,
     UserResponse
 )
+from app.core.security import create_access_token
+from datetime import timedelta
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/login", response_model=UserLoginResponse)
+async def login(
+    user_data: UserLogin,
+    db: Session = Depends(get_db)
+):
+    """
+    Login korisnika
+    
+    - **username**: Korisničko ime
+    - **password**: Lozinka
+    
+    Vraća JWT token i podatke o korisniku
+    """
+    user_service = UserService(db)
+    
+    # Autentifikuj korisnika
+    user = user_service.authenticate_user(user_data.username, user_data.password)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Pogrešno korisničko ime ili lozinka",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Kreiraj JWT token
+    access_token = create_access_token(
+        data={"sub": user.id, "username": user.username},
+        expires_delta=timedelta(weeks=520)  # Token traje 10 godina
+    )
+    
+    return UserLoginResponse(
+        access_token=access_token,
+        user={
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role.value if hasattr(user.role, 'value') else user.role
+        }
+    )
+
+
+@router.post("/register", response_model=UserLoginResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     user_data: UserCreate,
     db: Session = Depends(get_db)
@@ -27,18 +73,27 @@ async def register_user(
     - **role**: Uloga korisnika ('vodic' ili 'turista')
     
     Admin korisnici se dodaju direktno u bazu.
+    Automatski se loguje korisnik nakon registracije.
     """
     user_service = UserService(db)
     
     # Registruje korisnika
     new_user = user_service.create_user(user_data)
     
-    return UserCreateResponse(
-        id=new_user.id,
-        username=new_user.username,
-        email=new_user.email,
-        role=new_user.role,
-        message="Korisnik je uspešno registrovan"
+    # Kreiraj JWT token - automatski login nakon registracije
+    access_token = create_access_token(
+        data={"sub": new_user.id, "username": new_user.username},
+        expires_delta=timedelta(weeks=520)  # Token traje 10 godina
+    )
+    
+    return UserLoginResponse(
+        access_token=access_token,
+        user={
+            "id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "role": new_user.role.value if hasattr(new_user.role, 'value') else new_user.role
+        }
     )
 
 

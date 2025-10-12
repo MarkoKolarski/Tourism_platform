@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router";
 
 interface CartItem {
   id: number;
@@ -41,21 +43,27 @@ interface SagaTransaction {
 }
 
 export default function PurchasePage() {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [cart, setCart] = useState<ShoppingCart | null>(null);
   const [tokens, setTokens] = useState<PurchaseToken[]>([]);
   const [transactions, setTransactions] = useState<SagaTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"cart" | "tokens" | "transactions">("cart");
 
-  // Mock user ID - u produkciji bi se dobijao iz JWT tokena
-  const userId = 1;
   const API_URL = "http://localhost:8003/api/purchase";
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
 
   const fetchCart = async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/cart`, {
-        headers: { "Authorization": `Bearer mock-token-user-${userId}` }
+        headers: { "Authorization": `Bearer ${user?.token}` }
       });
       const data = await response.json();
       setCart(data);
@@ -74,7 +82,7 @@ export default function PurchasePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer mock-token-user-${userId}`
+          "Authorization": `Bearer ${user?.token}`
         },
         body: JSON.stringify({ tour_id: tourId, quantity })
       });
@@ -100,7 +108,7 @@ export default function PurchasePage() {
     try {
       const response = await fetch(`${API_URL}/cart/items/${itemId}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer mock-token-user-${userId}` }
+        headers: { "Authorization": `Bearer ${user?.token}` }
       });
       
       if (response.ok) {
@@ -123,7 +131,7 @@ export default function PurchasePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer mock-token-user-${userId}`
+          "Authorization": `Bearer ${user?.token}`
         },
         body: JSON.stringify({ cart_id: cart.id })
       });
@@ -150,7 +158,7 @@ export default function PurchasePage() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/tokens`, {
-        headers: { "Authorization": `Bearer mock-token-user-${userId}` }
+        headers: { "Authorization": `Bearer ${user?.token}` }
       });
       const data = await response.json();
       setTokens(data);
@@ -165,7 +173,7 @@ export default function PurchasePage() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/transactions`, {
-        headers: { "Authorization": `Bearer mock-token-user-${userId}` }
+        headers: { "Authorization": `Bearer ${user?.token}` }
       });
       const data = await response.json();
       setTransactions(data);
@@ -187,7 +195,7 @@ export default function PurchasePage() {
                 🛒 Purchase Service
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Shopping korpa, checkout i SAGA pattern transakcije
+                Shopping korpa - Ulogovani kao <span className="font-semibold text-purple-600">{user?.username}</span>
               </p>
             </div>
             <div className="flex items-center space-x-2">

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router";
 
 interface FollowStats {
   user_id: number;
@@ -19,6 +21,8 @@ interface Recommendation {
 }
 
 export default function FollowersPage() {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [userId, setUserId] = useState("");
   const [stats, setStats] = useState<FollowStats | null>(null);
   const [followers, setFollowers] = useState<Follower[]>([]);
@@ -28,10 +32,15 @@ export default function FollowersPage() {
   const [activeTab, setActiveTab] = useState<"stats" | "followers" | "following" | "recommendations">("stats");
 
   // Follow/Unfollow state
-  const [followerId, setFollowerId] = useState("");
   const [followingId, setFollowingId] = useState("");
 
   const API_URL = "http://localhost:8002/api/followers";
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
 
   const fetchStats = async (uid: string) => {
     setLoading(true);
@@ -88,8 +97,8 @@ export default function FollowersPage() {
   };
 
   const handleFollow = async () => {
-    if (!followerId || !followingId) {
-      alert("Unesite oba ID-a");
+    if (!followingId) {
+      alert("Unesite ID korisnika za praćenje");
       return;
     }
 
@@ -99,15 +108,18 @@ export default function FollowersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          follower_id: parseInt(followerId),
+          follower_id: user?.id,
           following_id: parseInt(followingId)
         })
       });
 
       if (response.ok) {
         alert("Uspešno zapraćen korisnik!");
-        setFollowerId("");
         setFollowingId("");
+        // Refresh data
+        if (user?.id) {
+          loadUserData(user.id.toString());
+        }
       } else {
         const error = await response.json();
         alert(`Greška: ${error.detail}`);
@@ -121,8 +133,8 @@ export default function FollowersPage() {
   };
 
   const handleUnfollow = async () => {
-    if (!followerId || !followingId) {
-      alert("Unesite oba ID-a");
+    if (!followingId) {
+      alert("Unesite ID korisnika");
       return;
     }
 
@@ -132,15 +144,18 @@ export default function FollowersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          follower_id: parseInt(followerId),
+          follower_id: user?.id,
           following_id: parseInt(followingId)
         })
       });
 
       if (response.ok) {
         alert("Uspešno otpraćen korisnik!");
-        setFollowerId("");
         setFollowingId("");
+        // Refresh data
+        if (user?.id) {
+          loadUserData(user.id.toString());
+        }
       } else {
         const error = await response.json();
         alert(`Greška: ${error.detail}`);
@@ -160,6 +175,12 @@ export default function FollowersPage() {
     fetchRecommendations(uid);
   };
 
+  const loadMyData = () => {
+    if (user?.id) {
+      loadUserData(user.id.toString());
+    }
+  };
+
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -171,7 +192,7 @@ export default function FollowersPage() {
                 🔗 Followers Service
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Graf relacija praćenja između korisnika
+                Graf relacija praćenja - Ulogovani kao <span className="font-semibold text-blue-600">{user?.username}</span>
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -184,6 +205,18 @@ export default function FollowersPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Actions */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Quick Action - My Data */}
+            <div className="card bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+              <h2 className="text-xl font-bold mb-4">Moji Podaci</h2>
+              <button
+                onClick={loadMyData}
+                disabled={loading}
+                className="btn w-full bg-white text-blue-600 hover:bg-blue-50"
+              >
+                Učitaj Moje Praćenje
+              </button>
+            </div>
+
             {/* User Search */}
             <div className="card">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -216,24 +249,14 @@ export default function FollowersPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Follower ID
-                  </label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={followerId}
-                    onChange={(e) => setFollowerId(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Following ID
+                    User ID za praćenje
                   </label>
                   <input
                     type="number"
                     className="input"
                     value={followingId}
                     onChange={(e) => setFollowingId(e.target.value)}
+                    placeholder="Unesite User ID"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">

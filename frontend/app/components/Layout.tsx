@@ -1,5 +1,6 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,6 +8,13 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -29,15 +37,41 @@ export default function Layout({ children }: LayoutProps) {
               <Link to="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
                 Home
               </Link>
-              <Link to="/users" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                Users
-              </Link>
-              <Link to="/followers" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                Followers
-              </Link>
-              <Link to="/purchase" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                Purchase
-              </Link>
+              {isAuthenticated && (
+                <>
+                  <Link to="/users" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                    Users
+                  </Link>
+                  <Link to="/followers" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                    Followers
+                  </Link>
+                  <Link to="/purchase" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                    Purchase
+                  </Link>
+                </>
+              )}
+              
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg">
+                    <span className="text-lg">👤</span>
+                    <span className="font-medium">{user?.username}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 font-medium"
+                  >
+                    Odjavi se
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600"
+                >
+                  Prijavi se
+                </Link>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -65,15 +99,37 @@ export default function Layout({ children }: LayoutProps) {
               <Link to="/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                 Home
               </Link>
-              <Link to="/users" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                Users
-              </Link>
-              <Link to="/followers" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                Followers
-              </Link>
-              <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                Purchase
-              </Link>
+              {isAuthenticated && (
+                <>
+                  <Link to="/users" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    Users
+                  </Link>
+                  <Link to="/followers" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    Followers
+                  </Link>
+                  <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    Purchase
+                  </Link>
+                </>
+              )}
+              
+              {isAuthenticated ? (
+                <>
+                  <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                    Ulogovan kao: <span className="font-medium text-blue-600">{user?.username}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Odjavi se
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="block px-3 py-2 rounded-md text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium">
+                  Prijavi se
+                </Link>
+              )}
             </div>
           </div>
         )}

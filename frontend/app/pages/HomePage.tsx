@@ -1,7 +1,10 @@
 import { Link } from "react-router";
 import Layout from "../components/Layout";
+import { useAuth } from "../context/AuthContext";
 
 export default function HomePage() {
+  const { isAuthenticated, user } = useAuth();
+
   const services = [
     {
       name: "Stakeholders Service",
@@ -52,7 +55,21 @@ export default function HomePage() {
           <div className="text-center">
             <h1 className="text-5xl font-bold mb-4">Tourism Platform</h1>
             <p className="text-xl mb-8 text-blue-100">Mikroservisna arhitektura za turističku platformu</p>
-            <div className="flex justify-center gap-4 flex-wrap">
+            
+            {isAuthenticated ? (
+              <div className="bg-white/20 backdrop-blur-sm px-8 py-4 rounded-lg inline-block">
+                <p className="text-lg">Dobrodošli, <span className="font-bold">{user?.username}</span>! 👋</p>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl"
+              >
+                Prijavite se da nastavite 🚀
+              </Link>
+            )}
+            
+            <div className="flex justify-center gap-4 flex-wrap mt-8">
               <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg">
                 <div className="text-2xl font-bold">3</div>
                 <div className="text-sm">Mikroservisa</div>
@@ -76,36 +93,78 @@ export default function HomePage() {
           Naši Servisi
         </h2>
         
+        {!isAuthenticated && (
+          <div className="mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+            <p className="text-blue-800 dark:text-blue-200">
+              💡 <Link to="/login" className="font-semibold underline">Prijavite se</Link> da pristupite svim servisima platforme!
+            </p>
+          </div>
+        )}
+        
         <div className="grid md:grid-cols-3 gap-8">
           {services.map((service) => (
-            <Link 
-              key={service.name}
-              to={service.link}
-              className="card card-hover group"
-            >
-              <div className="text-center mb-4">
-                <div className={`inline-flex items-center justify-center w-16 h-16 ${service.color} text-white text-3xl rounded-full mb-4 group-hover:scale-110 transition-transform`}>
-                  {service.icon}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {service.name}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {service.description}
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                {service.features.map((feature) => (
-                  <div key={feature} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span>{feature}</span>
+            isAuthenticated ? (
+              <Link 
+                key={service.name}
+                to={service.link}
+                className="card card-hover group"
+              >
+                <div className="text-center mb-4">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 ${service.color} text-white text-3xl rounded-full mb-4 group-hover:scale-110 transition-transform`}>
+                    {service.icon}
                   </div>
-                ))}
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    {service.name}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {service.description}
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  {service.features.map((feature) => (
+                    <div key={feature} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
+                      <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </Link>
+            ) : (
+              <div 
+                key={service.name}
+                className="card opacity-60 cursor-not-allowed"
+              >
+                <div className="text-center mb-4">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 ${service.color} text-white text-3xl rounded-full mb-4`}>
+                    {service.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    {service.name}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {service.description}
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  {service.features.map((feature) => (
+                    <div key={feature} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
+                      <svg className="w-5 h-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">🔒 Potrebna prijava</span>
+                </div>
               </div>
-            </Link>
+            )
           ))}
         </div>
       </div>

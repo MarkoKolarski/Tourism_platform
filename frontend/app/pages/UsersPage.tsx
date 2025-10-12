@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router";
 
 interface User {
   id: number;
@@ -13,6 +15,8 @@ interface User {
 }
 
 export default function UsersPage() {
+  const { user: currentUser, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -31,6 +35,12 @@ export default function UsersPage() {
 
   const API_URL = "http://localhost:8001/api/users";
 
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
+
   const fetchUser = async (userId: number) => {
     setLoading(true);
     try {
@@ -42,6 +52,12 @@ export default function UsersPage() {
       alert("Greška pri učitavanju korisnika");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMyProfile = () => {
+    if (currentUser?.id) {
+      fetchUser(currentUser.id);
     }
   };
 
@@ -90,7 +106,7 @@ export default function UsersPage() {
                 👥 Stakeholders Service
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Upravljanje korisnicima, profili i autentifikacija
+                Upravljanje korisnicima - Ulogovani kao <span className="font-semibold text-blue-600">{currentUser?.username}</span>
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -103,6 +119,19 @@ export default function UsersPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Column - Actions */}
           <div className="space-y-6">
+            {/* My Profile Card */}
+            <div className="card bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+              <h2 className="text-xl font-bold mb-4">Moj Profil</h2>
+              <p className="mb-4 text-blue-100">Prikaži podatke tvog naloga</p>
+              <button
+                onClick={loadMyProfile}
+                disabled={loading}
+                className="btn w-full bg-white text-blue-600 hover:bg-blue-50"
+              >
+                Učitaj Moj Profil
+              </button>
+            </div>
+
             {/* Get User Card */}
             <div className="card">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
