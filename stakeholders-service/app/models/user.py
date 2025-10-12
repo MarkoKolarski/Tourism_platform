@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import enum
 from app.core.database import Base
 
@@ -32,3 +33,6 @@ class User(Base):
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationship sa CurrentLocation
+    current_location = relationship("CurrentLocation", back_populates="user", uselist=False)

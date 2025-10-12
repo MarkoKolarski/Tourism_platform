@@ -1,17 +1,36 @@
 # Tourism Platform
 
-Mikro-servisna arhitektura za turističku platformu.
+Mikro-servisna arhitektura za turističku platformu sa API Gateway-om.
 
-## 🏗️ Arhitektura
-
-Projekat se sastoji od nezavisnih mikroservisa sa različitim tehnologijama:
+## � Arhitektura
 
 ```
-Tourism Platform
-├── Stakeholders Service (Port 8001) - PostgreSQL
-├── Followers Service (Port 8002) - Neo4j
-└── Purchase Service (Port 8003) - PostgreSQL + SAGA Pattern
+                    Internet
+                       ↓
+              ┌─────────────────┐
+              │   API Gateway   │ ← Port 80 (Nginx)
+              │                 │
+              └─────────────────┘
+                 ↓ ↓ ↓ ↓ ↓
+    ┌─────────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
+    │Frontend │ │Users│ │Folw │ │Shop │ │Neo4j│
+    │   UI    │ │ API │ │ API │ │ API │ │ DB  │
+    │  :3000  │ │:8001│ │:8002│ │:8003│ │:7687│
+    └─────────┘ └─────┘ └─────┘ └─────┘ └─────┘
+                              ↓
+                        ┌──────────┐
+                        │PostgreSQL│
+                        │    DB    │
+                        └──────────┘
 ```
+
+## 🚀 Pristup Aplikaciji
+
+**Glavni URL**: http://localhost (port 80)
+
+- **Frontend**: http://localhost/
+- **API Endpoints**: http://localhost/api/v1/...
+- **Health Checks**: http://localhost/health
 
 ## 📦 Servisi
 

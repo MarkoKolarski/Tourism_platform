@@ -4,7 +4,7 @@ Inicijalizacija PostgreSQL baze za Stakeholders Service
 Ova skripta:
 1. Proverava da li postoji baza 'tourism_stakeholders'
 2. Ako ne postoji, kreira je
-3. Kreira tabele iEnum tipove
+3. Kreira tabele i Enum tipove
 4. Popunjava bazu sa inicijalnim test podacima
 """
 
@@ -35,7 +35,6 @@ def check_and_create_database():
     print_section("PROVERA I KREIRANJE BAZE PODATAKA")
     
     try:
-        # Konekcija na postgres bazu (default baza)
         conn = psycopg2.connect(
             host=DB_HOST,
             port=DB_PORT,
@@ -46,23 +45,15 @@ def check_and_create_database():
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
         
-        # Proveri da li baza postoji
-        cursor.execute(
-            "SELECT 1 FROM pg_database WHERE datname = %s",
-            (DB_NAME,)
-        )
-        
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (DB_NAME,))
         exists = cursor.fetchone()
         
         if exists:
             print(f"✅ Baza '{DB_NAME}' već postoji")
             return True
         else:
-            # Kreiraj bazu
             print(f"📋 Baza '{DB_NAME}' ne postoji. Kreiram...")
-            cursor.execute(
-                sql.SQL("CREATE DATABASE {}").format(sql.Identifier(DB_NAME))
-            )
+            cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(DB_NAME)))
             print(f"✅ Baza '{DB_NAME}' uspešno kreirana!")
             return True
             
@@ -81,7 +72,6 @@ def create_tables_and_populate():
     print_section("KREIRANJE TABELA I POPUNJAVANJE PODATAKA")
     
     try:
-        # Konekcija na novu bazu
         conn = psycopg2.connect(
             host=DB_HOST,
             port=DB_PORT,
@@ -126,15 +116,9 @@ def create_tables_and_populate():
         
         # 3. Kreiranje indexa
         print("\n📋 Kreiranje indexa...")
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-        """)
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-        """)
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-        """)
+        cursor.execute("""CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);""")
+        cursor.execute("""CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);""")
+        cursor.execute("""CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);""")
         print("✅ Indexi kreirani/već postoje")
         
         # 4. Popunjavanje sa test podacima
@@ -200,27 +184,46 @@ def create_tables_and_populate():
             print(f"  ✅ Test vodič korisnik kreiran (ID: {result[0]})")
         else:
             print(f"  ℹ️  Test vodič korisnik već postoji")
-        
+
+        # 5️⃣ Novi deo — tabela current_locations
+        print("\n📍 Kreiranje tabele 'current_locations'...")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS current_locations (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                latitude DOUBLE PRECISION NOT NULL,
+                longitude DOUBLE PRECISION NOT NULL,
+                recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        print("✅ Tabela 'current_locations' kreirana/već postoji")
+
+        # Ubacivanje test lokacije za korisnika 'testuser'
+        print("📋 Unos test lokacije za korisnika 'testuser'...")
+        cursor.execute("""
+            INSERT INTO current_locations (user_id, latitude, longitude)
+            SELECT id, 45.2671, 19.8335 FROM users WHERE username = 'testuser'
+            ON CONFLICT DO NOTHING;
+        """)
+        print("✅ Test lokacija dodata (ako već nije postojala)")
+
         # Commit promena
         conn.commit()
         
-        # 5. Provera ukupnog broja korisnika
+        # 6. Statistika baze
         print("\n📊 Statistika baze:")
         cursor.execute("SELECT COUNT(*) FROM users;")
         user_count = cursor.fetchone()[0]
         print(f"  👥 Ukupno korisnika: {user_count}")
         
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'ADMIN'::userrole;")
-        admin_count = cursor.fetchone()[0]
-        print(f"  👑 Admin korisnika: {admin_count}")
+        print(f"  👑 Admin korisnika: {cursor.fetchone()[0]}")
         
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'VODIC'::userrole;")
-        vodic_count = cursor.fetchone()[0]
-        print(f"  🗺️  Vodič korisnika: {vodic_count}")
+        print(f"  🗺️  Vodič korisnika: {cursor.fetchone()[0]}")
         
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'TURISTA'::userrole;")
-        turista_count = cursor.fetchone()[0]
-        print(f"  🎒 Turista korisnika: {turista_count}")
+        print(f"  🎒 Turista korisnika: {cursor.fetchone()[0]}")
         
         print("\n✅ Sve tabele i podaci su uspešno kreirani!")
         return True
@@ -251,13 +254,11 @@ def verify_database():
         )
         cursor = conn.cursor()
         
-        # Proveri sve korisnike
         cursor.execute("""
             SELECT id, username, email, role, first_name, last_name, is_blocked
             FROM users
             ORDER BY id;
         """)
-        
         users = cursor.fetchall()
         
         if users:
@@ -267,8 +268,7 @@ def verify_database():
                 status = "🚫 BLOKIRAN" if blocked else "✅ AKTIVAN"
                 full_name = f"{fname or ''} {lname or ''}".strip() or "N/A"
                 print(f"  ID {user_id}: @{username:<15} ({role:<10}) - {full_name:<20} {status}")
-                print(f"         Email: {email}")
-                print()
+                print(f"         Email: {email}\n")
         else:
             print("⚠️  Nema korisnika u bazi")
         
@@ -296,17 +296,14 @@ def main():
     print("=" * 70)
     
     try:
-        # Korak 1: Proveri/kreiraj bazu
         if not check_and_create_database():
             print("\n❌ Neuspešno kreiranje baze. Prekidam...")
             sys.exit(1)
         
-        # Korak 2: Kreiraj tabele i popuni podatke
         if not create_tables_and_populate():
             print("\n❌ Neuspešno kreiranje tabela. Prekidam...")
             sys.exit(1)
         
-        # Korak 3: Verifikuj bazu
         if not verify_database():
             print("\n⚠️  Verifikacija nije uspela, ali baza je kreirana")
         

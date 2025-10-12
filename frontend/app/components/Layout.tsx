@@ -49,6 +49,14 @@ export default function Layout({ children }: LayoutProps) {
                   <Link to="/purchase" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
                     Purchase
                   </Link>
+                  <Link to="/simulator" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                    📍 Simulator
+                  </Link>
+                  {user?.role === "admin" && (
+                    <Link to="/admin" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                      Admin
+                    </Link>
+                  )}
                 </>
               )}
               
@@ -111,6 +119,14 @@ export default function Layout({ children }: LayoutProps) {
                   <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     Purchase
                   </Link>
+                  <Link to="/simulator" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    📍 Simulator
+                  </Link>
+                  {user?.role === "admin" && (
+                    <Link to="/admin" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      Admin
+                    </Link>
+                  )}
                 </>
               )}
               
