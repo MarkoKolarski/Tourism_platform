@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
@@ -23,13 +23,12 @@ interface Recommendation {
 export default function FollowersPage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState("");
   const [stats, setStats] = useState<FollowStats | null>(null);
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [following, setFollowing] = useState<Follower[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"stats" | "followers" | "following" | "recommendations">("stats");
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"followers" | "following" | "recommendations">("followers");
 
   // Follow/Unfollow state
   const [followingId, setFollowingId] = useState("");
@@ -43,56 +42,42 @@ export default function FollowersPage() {
   }
 
   const fetchStats = async (uid: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${API_URL}/stats/${uid}`);
       const data = await response.json();
       setStats(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
-      alert("Greška pri učitavanju statistike");
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchFollowers = async (uid: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${API_URL}/followers/${uid}`);
       const data = await response.json();
       setFollowers(data);
     } catch (error) {
       console.error("Error fetching followers:", error);
-      alert("Greška pri učitavanju pratilaca");
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchFollowing = async (uid: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${API_URL}/following/${uid}`);
       const data = await response.json();
       setFollowing(data);
     } catch (error) {
       console.error("Error fetching following:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchRecommendations = async (uid: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${API_URL}/recommendations/${uid}?limit=10`);
       const data = await response.json();
       setRecommendations(data.recommendations || []);
     } catch (error) {
       console.error("Error fetching recommendations:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -118,7 +103,7 @@ export default function FollowersPage() {
         setFollowingId("");
         // Refresh data
         if (user?.id) {
-          loadUserData(user.id.toString());
+          await loadUserData(user.id.toString());
         }
       } else {
         const error = await response.json();
@@ -154,7 +139,7 @@ export default function FollowersPage() {
         setFollowingId("");
         // Refresh data
         if (user?.id) {
-          loadUserData(user.id.toString());
+          await loadUserData(user.id.toString());
         }
       } else {
         const error = await response.json();
@@ -167,19 +152,26 @@ export default function FollowersPage() {
     }
   };
 
-  const loadUserData = (uid: string) => {
-    setUserId(uid);
-    fetchStats(uid);
-    fetchFollowers(uid);
-    fetchFollowing(uid);
-    fetchRecommendations(uid);
+  const loadUserData = async (uid: string) => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchStats(uid),
+        fetchFollowers(uid),
+        fetchFollowing(uid),
+        fetchRecommendations(uid)
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loadMyData = () => {
+  // Load current user's data on mount
+  useEffect(() => {
     if (user?.id) {
       loadUserData(user.id.toString());
     }
-  };
+  }, [user?.id]);
 
   return (
     <Layout>
@@ -202,115 +194,89 @@ export default function FollowersPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Actions */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Quick Action - My Data */}
-            <div className="card bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-              <h2 className="text-xl font-bold mb-4">Moji Podaci</h2>
-              <button
-                onClick={loadMyData}
-                disabled={loading}
-                className="btn w-full bg-white text-blue-600 hover:bg-blue-50"
-              >
-                Učitaj Moje Praćenje
-              </button>
-            </div>
-
-            {/* User Search */}
-            <div className="card">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Pretraga Korisnika
-              </h2>
-              <div className="space-y-4">
-                <input
-                  type="number"
-                  className="input"
-                  placeholder="User ID"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && userId && loadUserData(userId)}
-                />
-                <button
-                  onClick={() => userId && loadUserData(userId)}
-                  disabled={loading || !userId}
-                  className="btn btn-primary w-full"
-                >
-                  {loading ? "Učitavanje..." : "Učitaj Podatke"}
-                </button>
-              </div>
-            </div>
-
-            {/* Follow/Unfollow Actions */}
-            <div className="card">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Follow Akcije
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    User ID za praćenje
-                  </label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={followingId}
-                    onChange={(e) => setFollowingId(e.target.value)}
-                    placeholder="Unesite User ID"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={handleFollow} className="btn btn-success">
-                    Follow
-                  </button>
-                  <button onClick={handleUnfollow} className="btn btn-danger">
-                    Unfollow
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* API Info */}
-            <div className="card bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-              <h3 className="font-bold text-green-900 dark:text-green-200 mb-2">API Endpoints</h3>
-              <ul className="text-sm text-green-800 dark:text-green-300 space-y-1">
-                <li>• POST /follow</li>
-                <li>• POST /unfollow</li>
-                <li>• GET /followers/:id</li>
-                <li>• GET /following/:id</li>
-                <li>• GET /stats/:id</li>
-                <li>• GET /recommendations/:id</li>
-              </ul>
-            </div>
+        {loading ? (
+          <div className="card text-center py-12">
+            <div className="spinner mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Učitavanje podataka...</p>
           </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Left Column - Stats & Actions */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Stats Card */}
+              {stats && (
+                <div className="card">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Moja Statistika
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">
+                        {stats.followers_count}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Pratilaca</div>
+                    </div>
+                    <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <div className="text-4xl font-bold text-green-600 mb-2">
+                        {stats.following_count}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Pratim</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {/* Right Column - Results */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Stats Card */}
-            {stats && (
+              {/* Follow/Unfollow Actions */}
               <div className="card">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                  Statistika Korisnika #{stats.user_id}
+                  Zaprati Korisnika
                 </h2>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <div className="text-4xl font-bold text-blue-600 mb-2">
-                      {stats.followers_count}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400">Pratilaca</div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      User ID
+                    </label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={followingId}
+                      onChange={(e) => setFollowingId(e.target.value)}
+                      placeholder="Unesite User ID"
+                    />
                   </div>
-                  <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="text-4xl font-bold text-green-600 mb-2">
-                      {stats.following_count}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400">Prati</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={handleFollow} 
+                      className="btn btn-success"
+                      disabled={!followingId}
+                    >
+                      Zaprati
+                    </button>
+                    <button 
+                      onClick={handleUnfollow} 
+                      className="btn btn-danger"
+                      disabled={!followingId}
+                    >
+                      Otprati
+                    </button>
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Tabs */}
-            {(followers.length > 0 || following.length > 0 || recommendations.length > 0) && (
+              {/* Info Card */}
+              <div className="card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                <h3 className="font-bold text-blue-900 dark:text-blue-200 mb-2">Funkcionalnosti</h3>
+                <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                  <li>• Zaprati druge korisnike</li>
+                  <li>• Vidi ko te prati</li>
+                  <li>• Preporuke za praćenje</li>
+                  <li>• Zajedničke veze</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Right Column - Lists */}
+            <div className="lg:col-span-2">
               <div className="card">
                 {/* Tab Headers */}
                 <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
@@ -332,7 +298,7 @@ export default function FollowersPage() {
                         : "text-gray-600 dark:text-gray-400"
                     }`}
                   >
-                    Prati ({following.length})
+                    Pratim ({following.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("recommendations")}
@@ -347,68 +313,93 @@ export default function FollowersPage() {
                 </div>
 
                 {/* Tab Content */}
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {activeTab === "followers" && followers.map((follower) => (
-                    <div key={follower.user_id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {follower.username[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">{follower.username}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">ID: {follower.user_id}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {activeTab === "following" && following.map((user) => (
-                    <div key={user.user_id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {user.username[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">{user.username}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">ID: {user.user_id}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {activeTab === "recommendations" && recommendations.map((rec) => (
-                    <div key={rec.user_id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {rec.username[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">{rec.username}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {rec.mutual_friends} zajedničkih prijatelja
+                <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                  {activeTab === "followers" && (
+                    <>
+                      {followers.length > 0 ? (
+                        followers.map((follower) => (
+                          <div key={follower.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                {follower.username[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-gray-900 dark:text-white">{follower.username}</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">ID: {follower.user_id}</div>
+                              </div>
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          Nemate pratioce
                         </div>
-                      </div>
-                      <span className="badge badge-primary">{rec.mutual_friends}</span>
-                    </div>
-                  ))}
+                      )}
+                    </>
+                  )}
+
+                  {activeTab === "following" && (
+                    <>
+                      {following.length > 0 ? (
+                        following.map((user) => (
+                          <div key={user.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                {user.username[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-gray-900 dark:text-white">{user.username}</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">ID: {user.user_id}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          Ne pratite nikoga
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {activeTab === "recommendations" && (
+                    <>
+                      {recommendations.length > 0 ? (
+                        <>
+                          <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                            <p className="text-sm text-purple-800 dark:text-purple-300">
+                              💡 Preporuke su zasnovane na zajedničkim vezama - korisnici koje prate ljudi koje vi pratite
+                            </p>
+                          </div>
+                          {recommendations.map((rec) => (
+                            <div key={rec.user_id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                  {rec.username[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-gray-900 dark:text-white">{rec.username}</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    {rec.mutual_friends} {rec.mutual_friends === 1 ? 'zajednički prijatelj' : 'zajedničkih prijatelja'}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="badge badge-primary">{rec.mutual_friends}</span>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          Nema preporuka za sada
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
-            )}
-
-            {!stats && (
-              <div className="card text-center py-12">
-                <div className="text-6xl mb-4">🔗</div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Nema Učitanih Podataka
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Unesite User ID i učitajte podatke o praćenju
-                </p>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );

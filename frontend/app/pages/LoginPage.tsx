@@ -9,6 +9,9 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("turista");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -44,7 +47,7 @@ export default function LoginPage() {
         
         navigate("/");
       } else {
-        // REGISTER - dodaj role field
+        // REGISTER
         const response = await fetch(`${API_URL}/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -52,7 +55,9 @@ export default function LoginPage() {
             username, 
             email, 
             password,
-            role: "turista"  // Default role
+            role,
+            first_name: firstName,
+            last_name: lastName
           }),
         });
 
@@ -133,7 +138,7 @@ export default function LoginPage() {
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
@@ -148,7 +153,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Lozinka
+                Lozinka {!isLogin && "*"}
               </label>
               <input
                 type="password"
@@ -159,6 +164,52 @@ export default function LoginPage() {
                 placeholder="Unesite lozinku"
               />
             </div>
+
+            {!isLogin && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Uloga *
+                  </label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="turista">Turista</option>
+                    <option value="vodic">Vodič</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Ime
+                    </label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Ime"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Prezime
+                    </label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Prezime"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">

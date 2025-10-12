@@ -11,9 +11,10 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logout();
-    navigate("/login");
+    // Use replace to prevent going back to authenticated pages
+    navigate("/login", { replace: true });
   };
 
   return (
