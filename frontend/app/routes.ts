@@ -7,4 +7,5 @@ export default [
   route("followers", "pages/FollowersPage.tsx"),
   route("purchase", "pages/PurchasePage.tsx"),
   route("admin", "pages/AdminPage.tsx"),
+  route("simulator", "pages/SimulatorPage.tsx"),
 ] satisfies RouteConfig;

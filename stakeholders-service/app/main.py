@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine
 from app.models.user import Base
+from app.models.current_location import CurrentLocation  # Import za kreiranje tabele
 from app.api.users import router as users_router
+from app.api.locations import router as locations_router
 
 # Kreiranje tabela u bazi
 Base.metadata.create_all(bind=engine)
@@ -29,6 +31,12 @@ app.include_router(
     users_router, 
     prefix=f"{settings.api_prefix}/users", 
     tags=["users"]
+)
+
+app.include_router(
+    locations_router,
+    prefix=f"{settings.api_prefix}/locations",
+    tags=["locations"]
 )
 
 # Health check endpoint

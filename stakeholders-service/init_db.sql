@@ -70,3 +70,16 @@ VALUES (
     'Iskusni vodič sa više od 10 godina iskustva u turizmu.',
     FALSE
 ) ON CONFLICT (username) DO NOTHING;
+
+-- Kreiranje tabele za cuvanje trenutnih lokacija korisnika (14. tacka)
+CREATE TABLE IF NOT EXISTS current_locations (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Unos test lokacije za korisnika 'testuser'
+INSERT INTO current_locations (user_id, latitude, longitude)
+VALUES (2, 45.2671, 19.8335);
