@@ -90,13 +90,15 @@ class ObservabilityManager:
         trace.set_tracer_provider(TracerProvider(resource=resource))
         self.tracer = trace.get_tracer(__name__)
         
-        # Jaeger exporter
-        jaeger_exporter = JaegerExporter(
-            agent_host_name="jaeger",
-            agent_port=6831,
+        # OTLP exporter za Jaeger
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        
+        otlp_exporter = OTLPSpanExporter(
+            endpoint="http://jaeger:4317",
+            insecure=True
         )
         
-        span_processor = BatchSpanProcessor(jaeger_exporter)
+        span_processor = BatchSpanProcessor(otlp_exporter)
         trace.get_tracer_provider().add_span_processor(span_processor)
         
     def setup_metrics(self):

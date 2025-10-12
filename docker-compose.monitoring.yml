@@ -34,38 +34,21 @@ services:
       - tourism_platform_tourism-network
     restart: unless-stopped
 
-  # Grafana - Visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: tourism-grafana
-    ports:
-      - "4000:3000"  # Port 4000 to avoid conflicts
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-    networks:
-      - tourism_platform_tourism-network
-    restart: unless-stopped
-
   # cAdvisor - Container Metrics
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: tourism-cadvisor
     ports:
       - "8080:8080"
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
     privileged: true
-    devices:
-      - /dev/kmsg
+    command:
+      - '--housekeeping_interval=30s'
+      - '--docker_only=true'
     networks:
       - tourism_platform_tourism-network
     restart: unless-stopped
@@ -90,7 +73,6 @@ services:
 
 volumes:
   prometheus_data:
-  grafana_data:
 
 networks:
   tourism_platform_tourism-network:
