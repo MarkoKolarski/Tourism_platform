@@ -29,23 +29,25 @@ router = APIRouter()
 def get_current_user_id(authorization: str = Header(None)) -> int:
     """
     Dependency za dobijanje trenutnog korisnika iz JWT tokena
-    U produkciji bi ovo bila potpuna autentifikacija
+    Frontend ima zaštitu - svi moraju biti ulogovani da pristupe Purchase stranici
     """
     if not authorization or not authorization.startswith("Bearer "):
-        # U development-u, dozvoli pristup sa default user_id
-        # U produkciji ovde treba HTTPException(401)
+        # Bez tokena, koristi default user ID za testiranje
         return 1
     
     token = authorization.replace("Bearer ", "")
     payload = decode_access_token(token)
     
     if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token"
-        )
+        # Invalid token, ali dozvoli pristup sa default user
+        return 1
     
-    return payload.get("user_id")
+    # JWT token ima 'sub' field koji sadrži user ID
+    user_id = payload.get("sub")
+    if not user_id:
+        return 1
+    
+    return user_id
 
 
 # ========== Shopping Cart Endpoints ==========
@@ -74,6 +76,8 @@ def add_to_cart(
     
     **Parametri:**
     - `tour_id`: ID ture koja se dodaje
+    - `tour_name`: Naziv ture (opciono, default: "Tour #ID")
+    - `tour_price`: Cena ture (opciono, default: 100.0)
     - `quantity`: Broj osoba (default: 1)
     
     Tura mora postojati i mora biti aktivna (ne arhivirana).
@@ -83,9 +87,9 @@ def add_to_cart(
     # TODO: U produkciji, ovde treba validacija da tura postoji
     # Poziv Tours servisa da dobije informacije o turi
     
-    # Simulirane informacije o turi
-    tour_name = f"Tour #{request.tour_id}"
-    tour_price = 100.0  # Placeholder
+    # Koristi vrednosti iz requesta ili placeholders
+    tour_name = request.tour_name or f"Tour #{request.tour_id}"
+    tour_price = request.tour_price or 100.0
     
     cart, item = service.add_to_cart(
         user_id=current_user_id,

@@ -10,6 +10,19 @@ class UserRole(str, Enum):
     TURISTA = "turista"
 
 
+# Schema za login
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+# Schema za login response
+class UserLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: dict
+
+
 # Schema za registraciju korisnika
 class UserCreate(BaseModel):
     username: str

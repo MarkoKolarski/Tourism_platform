@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserProfileUpdate
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password, create_access_token
 from typing import Optional
 
 
@@ -11,6 +11,20 @@ class UserService:
     
     def __init__(self, db: Session):
         self.db = db
+    
+    def authenticate_user(self, username: str, password: str) -> Optional[User]:
+        """Autentifikuje korisnika i vraća korisnika ako su kredencijali ispravni"""
+        user = self.get_user_by_username(username)
+        if not user:
+            return None
+        if not verify_password(password, user.password_hash):
+            return None
+        if user.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Vaš nalog je blokiran"
+            )
+        return user
     
     def create_user(self, user_data: UserCreate) -> User:
         """Registruje novog korisnika"""
