@@ -34,6 +34,9 @@ def check_and_create_database():
     """Proverava i kreira bazu ako ne postoji"""
     print_section("PROVERA I KREIRANJE BAZE PODATAKA")
     
+    conn = None
+    cursor = None
+    
     try:
         conn = psycopg2.connect(
             host=DB_HOST,
@@ -184,6 +187,18 @@ def create_tables_and_populate():
             print(f"  ✅ Test vodič korisnik kreiran (ID: {result[0]})")
         else:
             print(f"  ℹ️  Test vodič korisnik već postoji")
+
+        cursor.execute("""
+            INSERT INTO users (username, email, password_hash, role, first_name, last_name, biography, is_blocked) 
+            VALUES ('marko2', 'marko2@tourism.com', '$2b$12$vrvL18pCBzt.yuqis5Loj.GkNRrfAmjkxfqLTav8zLPdh2hdS8gDW',
+                    'VODIC'::userrole, 'Marko', 'Marković', 'Turista, voli da putuje.', FALSE)
+            ON CONFLICT (username) DO NOTHING;
+        """)
+        result = cursor.fetchone()
+        if result:
+            print(f"  ✅ Test turista korisnik kreiran (ID: {result[0]})")
+        else:
+            print(f"  ℹ️  Test turista korisnik već postoji")
 
         # 5️⃣ Novi deo — tabela current_locations
         print("\n📍 Kreiranje tabele 'current_locations'...")
