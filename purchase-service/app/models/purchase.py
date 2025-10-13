@@ -1,7 +1,9 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.ext.hybrid import hybrid_property
+from datetime import datetime, timezone
 import enum
+import json
 from app.core.database import Base
 
 
@@ -26,8 +28,8 @@ class ShoppingCart(Base):
     total_price = Column(Float, default=0.0)
     status = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDING)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     items = relationship("OrderItem", back_populates="cart", cascade="all, delete-orphan")
     purchase_tokens = relationship("TourPurchaseToken", back_populates="cart")
@@ -55,7 +57,7 @@ class OrderItem(Base):
     quantity = Column(Integer, default=1)
     price = Column(Float, nullable=False)  # tour_price * quantity
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     cart = relationship("ShoppingCart", back_populates="items")
     
@@ -82,7 +84,7 @@ class TourPurchaseToken(Base):
     tour_name = Column(String(255), nullable=False)
     
     purchase_price = Column(Float, nullable=False)
-    purchased_at = Column(DateTime, default=datetime.utcnow)
+    purchased_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     is_active = Column(SQLEnum(OrderStatus), default=OrderStatus.COMPLETED)
     
@@ -109,6 +111,6 @@ class SagaTransaction(Base):
     compensation_log = Column(Text) 
     error_message = Column(Text, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)

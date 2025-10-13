@@ -209,7 +209,7 @@ async def checkout(
         status="completed",
         tokens=tokens,
         total_price=total_price,
-        message="Purchase completed successfully! You can now access full tour details."
+        message="Kupovina uspešno završena! Sada možete pristupiti svim detaljima ture."
     )
 
 

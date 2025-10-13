@@ -50,6 +50,7 @@ export default function PurchasePage() {
   const [transactions, setTransactions] = useState<SagaTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"cart" | "tokens" | "transactions">("cart");
+  const [showDevModal, setShowDevModal] = useState(false);
 
   const API_URL = "/api/v1/purchase";
 
@@ -243,6 +244,34 @@ export default function PurchasePage() {
           </div>
         </div>
 
+        {/* Development warning modal for Transactions */}
+        {showDevModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-black opacity-40" onClick={() => setShowDevModal(false)} />
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-lg mx-4 p-6 z-10">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Upozorenje (development)</h3>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Ovo je development funkcionalnost i služi za debagovanje SAGA transakcija. U produkciji bi
+                ova poruka i alatke trebalo da budu uklonjene.
+              </p>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowDevModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Otkaži
+                </button>
+                <button
+                  onClick={() => { setShowDevModal(false); setActiveTab("transactions"); fetchTransactions(); }}
+                  className="btn btn-primary"
+                >
+                  Nastavi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
           <button
@@ -266,7 +295,7 @@ export default function PurchasePage() {
             🎫 Moji Tokeni
           </button>
           <button
-            onClick={() => { setActiveTab("transactions"); fetchTransactions(); }}
+            onClick={() => { setShowDevModal(true); }}
             className={`px-6 py-3 font-medium -mb-px ${
               activeTab === "transactions"
                 ? "border-b-2 border-purple-600 text-purple-600"
@@ -459,16 +488,20 @@ export default function PurchasePage() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Završeni Koraci:</h4>
-                      <ul className="space-y-1">
-                        {Array.isArray(tx.steps_completed) && tx.steps_completed.map((step, idx) => (
-                          <li key={idx} className="text-sm text-green-600 dark:text-green-400 flex items-center">
-                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            {step}
-                          </li>
-                        ))}
-                      </ul>
+                      {Array.isArray(tx.steps_completed) && tx.steps_completed.length > 0 ? (
+                        <ul className="space-y-1">
+                          {tx.steps_completed.map((step, idx) => (
+                            <li key={idx} className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              {step}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 italic">Nema završenih koraka</p>
+                      )}
                     </div>
 
                     {Array.isArray(tx.compensation_log) && tx.compensation_log.length > 0 && (

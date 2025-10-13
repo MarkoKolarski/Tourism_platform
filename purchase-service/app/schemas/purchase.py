@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
+import json
 
 
 class OrderStatusEnum(str, Enum):
@@ -101,10 +102,34 @@ class SagaTransactionResponse(BaseModel):
     user_id: int
     status: OrderStatusEnum
     current_step: Optional[str]
+    steps_completed: List[str] = Field(default_factory=list, description="Završeni koraci")
+    compensation_log: List[str] = Field(default_factory=list, description="Log kompenzacije")
     error_message: Optional[str]
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime]
+    
+    @field_validator('steps_completed', mode='before')
+    @classmethod
+    def parse_steps_completed(cls, v):
+        """Parse JSON string to list"""
+        if isinstance(v, str):
+            try:
+                return json.loads(v) if v else []
+            except json.JSONDecodeError:
+                return []
+        return v if v is not None else []
+    
+    @field_validator('compensation_log', mode='before')
+    @classmethod
+    def parse_compensation_log(cls, v):
+        """Parse JSON string to list"""
+        if isinstance(v, str):
+            try:
+                return json.loads(v) if v else []
+            except json.JSONDecodeError:
+                return []
+        return v if v is not None else []
     
     class Config:
         from_attributes = True
