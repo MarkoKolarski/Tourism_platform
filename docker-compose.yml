@@ -14,10 +14,30 @@ services:
       - followers-service
       - purchase-service
       - frontend
+      # - blog-service
     networks:
       - tourism-network
     restart: unless-stopped
 
+# postgres:
+  postgres:
+    image: postgres:15
+    container_name: tourism-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ftn
+      #POSTGRES_DB: tourism
+    #ports:
+    #  - "5432:5432"  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tourism-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   # Neo4j baza za Followers Service
   neo4j:
     image: neo4j:latest
@@ -66,7 +86,8 @@ services:
     container_name: tourism-stakeholders-service
     # Port removed - access through gateway only
     environment:
-      - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_stakeholders
+     # - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_stakeholders
+      - DATABASE_URL=postgresql://postgres:ftn@postgres:5432/tourism_stakeholders
       - SECRET_KEY=dev-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -83,13 +104,17 @@ services:
     container_name: tourism-purchase-service
     # Port removed - access through gateway only
     environment:
-      - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_purchase
+      #- DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_purchase
+      - DATABASE_URL=postgresql://postgres:ftn@postgres:5432/tourism_purchase
       - SECRET_KEY=dev-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - STAKEHOLDERS_SERVICE_URL=http://stakeholders-service:8001
-      - FOLLOWERS_SERVICE_URL=http://followers-service:8002
-      - TOURS_SERVICE_URL=http://tours-service:8004
+      - STAKEHOLDERS_SERVICE_URL=http://gateway/api/v1
+      - FOLLOWERS_SERVICE_URL=http://gateway/api/v1
+      - PURCHASE_SERVICE_URL=http://gateway/api/v1
+      #- STAKEHOLDERS_SERVICE_URL=http://stakeholders-service:8001
+      #- FOLLOWERS_SERVICE_URL=http://followers-service:8002
+      #- TOURS_SERVICE_URL=http://tours-service:8004
     networks:
       - tourism-network
     restart: unless-stopped
@@ -112,6 +137,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   neo4j_data:
   neo4j_logs:
 

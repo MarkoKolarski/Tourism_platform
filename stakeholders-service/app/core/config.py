@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     # API
     api_title: str = "Tourism Platform - Stakeholders Service"
     api_version: str = "1.0.0"
-    api_prefix: str = "/api"
+    api_prefix: str = "/api/v1"
+    #api_prefix: str = "/api"
     
     class Config:
         env_file = ".env"

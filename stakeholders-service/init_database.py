@@ -16,7 +16,8 @@ from datetime import datetime
 
 
 # PostgreSQL connection parametri
-DB_HOST = "localhost"
+#DB_HOST = "localhost"
+DB_HOST = "postgres"
 DB_PORT = "5432"
 DB_USER = "postgres"
 DB_PASSWORD = "ftn"

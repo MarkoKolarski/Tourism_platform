@@ -10,7 +10,7 @@ ecdsa==0.19.1
 email-validator==2.3.0
 fastapi==0.116.1
 greenlet==3.2.4
-h11==0.16.0
+#h11==0.16.0
 idna==3.10
 passlib==1.7.4
 pyasn1==0.6.1
@@ -28,3 +28,4 @@ typing-inspection==0.4.1
 typing_extensions==4.15.0
 uvicorn==0.35.0
 neo4j==5.14.1
+httpx>=0.25
