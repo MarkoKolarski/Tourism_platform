@@ -1,0 +1,194 @@
+package handlers
+
+import (
+    "net/http"
+    "time"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
+    "blog-service/models"
+    "blog-service/repository"
+    "gorm.io/gorm"
+)
+
+type CommentHandler struct {
+    commentRepo *repository.CommentRepository
+}
+
+func NewCommentHandler(db *gorm.DB) *CommentHandler {
+    return &CommentHandler{
+        commentRepo: repository.NewCommentRepository(db),
+    }
+}
+
+func (h *CommentHandler) CreateComment(c *gin.Context) {
+    blogIDStr := c.Param("blogId")
+    
+    blogID, err := uuid.Parse(blogIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid blog ID"})
+        return
+    }
+    
+    var req models.CreateCommentRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    userIDStr, exists := c.Get("userID")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+        return
+    }
+    
+    userID, err := uuid.Parse(userIDStr.(string))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+        return
+    }
+    
+    // TODO: Check if blog exists
+    // TODO: Check if user follows the blog author (for functionality 9)
+    
+    comment := &models.Comment{
+        Content:       req.Content,
+        BlogID:        blogID,
+        UserID:        userID,
+        ParentCommentID: req.ParentCommentID,
+        CreatedAt:     time.Now(),
+        UpdatedAt:     time.Now(),
+    }
+    
+    if err := h.commentRepo.Create(comment); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusCreated, comment)
+}
+
+func (h *CommentHandler) GetCommentsByBlogID(c *gin.Context) {
+    blogIDStr := c.Param("blogId")
+    
+    blogID, err := uuid.Parse(blogIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid blog ID"})
+        return
+    }
+    
+    page := c.DefaultQuery("page", "1")
+    limit := c.DefaultQuery("limit", "10")
+    
+    comments, total, err := h.commentRepo.GetByBlogID(blogID, page, limit)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "comments": comments,
+        "total":    total,
+        "page":     page,
+        "limit":    limit,
+    })
+}
+
+func (h *CommentHandler) UpdateComment(c *gin.Context) {
+    commentIDStr := c.Param("id")
+    
+    commentID, err := uuid.Parse(commentIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
+        return
+    }
+    
+    var req models.UpdateCommentRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    userIDStr, exists := c.Get("userID")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+        return
+    }
+    
+    userID, err := uuid.Parse(userIDStr.(string))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+        return
+    }
+    
+    // Check if comment exists and user is the owner
+    existingComment, err := h.commentRepo.GetByID(commentID)
+    if err != nil {
+        if err == gorm.ErrRecordNotFound {
+            c.JSON(http.StatusNotFound, gin.H{"error": "Comment not found"})
+            return
+        }
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    if existingComment.UserID != userID {
+        c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to update this comment"})
+        return
+    }
+    
+    existingComment.Content = req.Content
+    existingComment.UpdatedAt = time.Now()
+    
+    if err := h.commentRepo.Update(existingComment); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, existingComment)
+}
+
+func (h *CommentHandler) DeleteComment(c *gin.Context) {
+    commentIDStr := c.Param("id")
+    
+    commentID, err := uuid.Parse(commentIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
+        return
+    }
+    
+    userIDStr, exists := c.Get("userID")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+        return
+    }
+    
+    userID, err := uuid.Parse(userIDStr.(string))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+        return
+    }
+    
+    // Check if comment exists and user is the owner
+    existingComment, err := h.commentRepo.GetByID(commentID)
+    if err != nil {
+        if err == gorm.ErrRecordNotFound {
+            c.JSON(http.StatusNotFound, gin.H{"error": "Comment not found"})
+            return
+        }
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // TODO: Allow blog owner to delete comments as well
+    if existingComment.UserID != userID {
+        c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to delete this comment"})
+        return
+    }
+    
+    if err := h.commentRepo.Delete(commentID); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"message": "Comment deleted successfully"})
+}
