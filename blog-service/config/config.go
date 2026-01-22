@@ -16,13 +16,13 @@ type Config struct {
 
 func LoadConfig() Config {
     return Config{
-        Port:       getEnv("PORT", "8082"),
+        Port:       getEnv("PORT", "8004"),
         DBHost:     getEnv("DB_HOST", "localhost"),
         DBPort:     getEnv("DB_PORT", "5432"),
-        DBUser:     getEnv("DB_USER", "blog_user"),
-        DBPassword: getEnv("DB_PASSWORD", "blog_password"),
-        DBName:     getEnv("DB_NAME", "blog_db"),
-        JWTSecret:  getEnv("JWT_SECRET", "your-secret-key"),
+        DBUser:     getEnv("DB_USER", "postgres"),  //"blog_user"
+        DBPassword: getEnv("DB_PASSWORD", "ftn"),
+        DBName:     getEnv("DB_NAME", "tourism_blog"), //blog_db
+        JWTSecret:  getEnv("JWT_SECRET", "dev-secret-key-change-this-in-production"),  //your-secret-key
     }
 }
 

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # API
     api_title: str = "Tourism Platform - Followers Service"
     api_version: str = "1.0.0"
-    api_prefix: str = "/api"
+    api_prefix: str = "/api/v1"
     
     class Config:
         env_file = ".env"
