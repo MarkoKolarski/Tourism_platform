@@ -13,8 +13,8 @@ services:
       - stakeholders-service
       - followers-service
       - purchase-service
+      - blog-service
       - frontend
-      # - blog-service
     networks:
       - tourism-network
     restart: unless-stopped
@@ -74,6 +74,27 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
     depends_on:
       neo4j:
+        condition: service_healthy
+    networks:
+      - tourism-network
+    restart: unless-stopped
+
+  blog-service:
+    build:
+      context: ./blog-service
+      dockerfile: Dockerfile
+    container_name: tourism-blog-service
+    # Port removed - access through gateway only
+    environment:
+      - PORT=8004
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=ftn
+      - DB_NAME=tourism_blog
+      - JWT_SECRET=dev-secret-key-change-this-in-production
+    depends_on:
+      postgres:
         condition: service_healthy
     networks:
       - tourism-network

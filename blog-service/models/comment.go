@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Comment struct {
@@ -16,9 +15,9 @@ type Comment struct {
 	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt       time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
-	Blog            Blog       `gorm:"foreignKey:BlogID" json:"-"`
-	Replies         []Comment  `gorm:"foreignKey:ParentCommentID" json:"replies,omitempty"`
-	UserInfo        UserInfo   `gorm:"-" json:"userInfo"`
+	Blog     Blog      `gorm:"foreignKey:BlogID" json:"-"`
+	Replies  []Comment `gorm:"foreignKey:ParentCommentID" json:"replies,omitempty"`
+	UserInfo UserInfo  `gorm:"-" json:"userInfo"`
 }
 
 type UserInfo struct {

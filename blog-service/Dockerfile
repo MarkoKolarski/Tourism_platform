@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine
+FROM golang:1.23-alpine
 
 WORKDIR /app
 
@@ -11,5 +11,7 @@ RUN go mod download
 COPY . .
 
 RUN go build -o blog-service .
+
+EXPOSE 8004
 
 CMD ["./blog-service"]
