@@ -23,7 +23,7 @@ func NewCommentHandler(db *gorm.DB) *CommentHandler {
 }
 
 func (h *CommentHandler) CreateComment(c *gin.Context) {
-	blogIDStr := c.Param("blogId")
+	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {
@@ -78,7 +78,7 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 }
 
 func (h *CommentHandler) GetCommentsByBlogID(c *gin.Context) {
-	blogIDStr := c.Param("blogId")
+	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {

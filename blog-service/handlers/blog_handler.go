@@ -237,7 +237,7 @@ func (h *BlogHandler) DeleteBlog(c *gin.Context) {
 }
 
 func (h *BlogHandler) LikeBlog(c *gin.Context) {
-	blogIDStr := c.Param("blogId")
+	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {
@@ -284,7 +284,7 @@ func (h *BlogHandler) LikeBlog(c *gin.Context) {
 }
 
 func (h *BlogHandler) UnlikeBlog(c *gin.Context) {
-	blogIDStr := c.Param("blogId")
+	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {
@@ -313,7 +313,7 @@ func (h *BlogHandler) UnlikeBlog(c *gin.Context) {
 }
 
 func (h *BlogHandler) GetLikeCount(c *gin.Context) {
-	blogIDStr := c.Param("blogId")
+	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {

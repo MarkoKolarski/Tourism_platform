@@ -9,44 +9,47 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
+	// Health check
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Blog service is running",
+			"service": "blog-service",
+		})
+	})
+
+	// Initialize handlers
 	blogHandler := handlers.NewBlogHandler(db)
 	commentHandler := handlers.NewCommentHandler(db)
 
-	// Health check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
-
+	// Public routes (no authentication required)
 	api := router.Group("/api")
 	{
-		blogs := api.Group("/blogs")
-		{
-			// Public routes
-			blogs.GET("", middleware.OptionalAuthMiddleware(), blogHandler.GetAllBlogs)
-			blogs.GET("/:id", middleware.OptionalAuthMiddleware(), blogHandler.GetBlogByID)
-			blogs.GET("/user/:userId", blogHandler.GetBlogsByUserID)
-			blogs.GET("/:blogId/likes/count", blogHandler.GetLikeCount)
+		// Blog routes - public read access
+		api.GET("/blogs", blogHandler.GetAllBlogs)
+		api.GET("/blogs/:id", blogHandler.GetBlogByID)
+		api.GET("/blogs/user/:userId", blogHandler.GetBlogsByUserID)
+		api.GET("/blogs/:id/likes/count", blogHandler.GetLikeCount)
+		api.GET("/blogs/:id/comments", commentHandler.GetCommentsByBlogID)
+	}
 
-			// Protected routes
-			blogs.POST("", middleware.AuthMiddleware(), blogHandler.CreateBlog)
-			blogs.PUT("/:id", middleware.AuthMiddleware(), blogHandler.UpdateBlog)
-			blogs.DELETE("/:id", middleware.AuthMiddleware(), blogHandler.DeleteBlog)
-			blogs.POST("/:id/publish", middleware.AuthMiddleware(), blogHandler.PublishBlog)
-			blogs.POST("/:id/close", middleware.AuthMiddleware(), blogHandler.CloseBlog)
+	// Protected routes (authentication required)
+	protected := api.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	{
+		// Blog management
+		protected.POST("/blogs", blogHandler.CreateBlog)
+		protected.PUT("/blogs/:id", blogHandler.UpdateBlog)
+		protected.DELETE("/blogs/:id", blogHandler.DeleteBlog)
 
-			// Like routes
-			blogs.POST("/:blogId/like", middleware.AuthMiddleware(), blogHandler.LikeBlog)
-			blogs.DELETE("/:blogId/like", middleware.AuthMiddleware(), blogHandler.UnlikeBlog)
+		// Blog actions
+		protected.POST("/blogs/:id/like", blogHandler.LikeBlog)
+		protected.DELETE("/blogs/:id/like", blogHandler.UnlikeBlog)
+		protected.PUT("/blogs/:id/publish", blogHandler.PublishBlog)
+		protected.PUT("/blogs/:id/close", blogHandler.CloseBlog)
 
-			// Comment routes
-			blogs.GET("/:blogId/comments", commentHandler.GetCommentsByBlogID)
-			blogs.POST("/:blogId/comments", middleware.AuthMiddleware(), commentHandler.CreateComment)
-		}
-
-		comments := api.Group("/comments")
-		{
-			comments.PUT("/:id", middleware.AuthMiddleware(), commentHandler.UpdateComment)
-			comments.DELETE("/:id", middleware.AuthMiddleware(), commentHandler.DeleteComment)
-		}
+		// Comment management
+		protected.POST("/blogs/:id/comments", commentHandler.CreateComment)
+		protected.PUT("/comments/:id", commentHandler.UpdateComment)
+		protected.DELETE("/comments/:id", commentHandler.DeleteComment)
 	}
 }

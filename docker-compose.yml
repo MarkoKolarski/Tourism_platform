@@ -26,11 +26,10 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ftn
-      #POSTGRES_DB: tourism
-    #ports:
-    #  - "5432:5432"  
+      POSTGRES_DB: tourism  # Default database
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql # database init
     networks:
       - tourism-network
     healthcheck:
@@ -84,7 +83,8 @@ services:
       context: ./blog-service
       dockerfile: Dockerfile
     container_name: tourism-blog-service
-    # Port removed - access through gateway only
+    ports:
+      - "8004:8004"  # Add this line to expose the port
     environment:
       - PORT=8004
       - DB_HOST=postgres
