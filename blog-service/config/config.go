@@ -22,7 +22,7 @@ func LoadConfig() Config {
         DBUser:     getEnv("DB_USER", "postgres"),  //"blog_user"
         DBPassword: getEnv("DB_PASSWORD", "ftn"),
         DBName:     getEnv("DB_NAME", "tourism_blog"), //blog_db
-        JWTSecret:  getEnv("JWT_SECRET", "dev-secret-key-change-this-in-production"),  //your-secret-key
+        JWTSecret:  getEnv("JWT_SECRET", "dev-secret-key"),  //your-secret-key
     }
 }
 

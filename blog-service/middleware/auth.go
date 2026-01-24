@@ -35,7 +35,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		jwtSecret := os.Getenv("JWT_SECRET")
 		if jwtSecret == "" {
-			jwtSecret = "dev-secret-key-change-this-in-production"
+			jwtSecret = "dev-secret-key"
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
@@ -99,7 +99,7 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 
 		jwtSecret := os.Getenv("JWT_SECRET")
 		if jwtSecret == "" {
-			jwtSecret = "dev-secret-key-change-this-in-production"
+			jwtSecret = "dev-secret-key"
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
