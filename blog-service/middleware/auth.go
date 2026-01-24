@@ -12,7 +12,7 @@ import (
 )
 
 type Claims struct {
-	Sub      interface{} `json:"sub"`      // Can be int or string
+	Sub      interface{} `json:"sub"` // Can be int or string
 	Username string      `json:"username"`
 	jwt.RegisteredClaims
 }
