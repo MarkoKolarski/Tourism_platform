@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"crypto/md5"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"blog-service/models"
@@ -22,8 +25,14 @@ func NewCommentHandler(db *gorm.DB) *CommentHandler {
 	}
 }
 
+// Helper function to convert integer user ID to UUID
+func commentIntToUUID(userID int) uuid.UUID {
+	hash := md5.Sum([]byte(fmt.Sprintf("user_%d", userID)))
+	return uuid.UUID(hash)
+}
+
 func (h *CommentHandler) CreateComment(c *gin.Context) {
-	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
+	blogIDStr := c.Param("id")
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {
@@ -43,11 +52,14 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := commentIntToUUID(userIDInt)
 
 	userName, _ := c.Get("userName")
 	userNameStr := ""
@@ -124,11 +136,14 @@ func (h *CommentHandler) UpdateComment(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := commentIntToUUID(userIDInt)
 
 	// Check if comment exists and user is the owner
 	existingComment, err := h.commentRepo.GetByID(commentID)
@@ -172,11 +187,14 @@ func (h *CommentHandler) DeleteComment(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := commentIntToUUID(userIDInt)
 
 	// Check if comment exists and user is the owner
 	existingComment, err := h.commentRepo.GetByID(commentID)

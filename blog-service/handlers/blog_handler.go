@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"crypto/md5"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"blog-service/models"
@@ -22,6 +25,13 @@ func NewBlogHandler(db *gorm.DB) *BlogHandler {
 	}
 }
 
+// Helper function to convert integer user ID to UUID
+func intToUUID(userID int) uuid.UUID {
+	// Create a deterministic UUID from integer ID
+	hash := md5.Sum([]byte(fmt.Sprintf("user_%d", userID)))
+	return uuid.UUID(hash)
+}
+
 func (h *BlogHandler) CreateBlog(c *gin.Context) {
 	var req models.CreateBlogRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -35,11 +45,14 @@ func (h *BlogHandler) CreateBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	userName, _ := c.Get("userName")
 	userNameStr := ""
@@ -149,11 +162,14 @@ func (h *BlogHandler) UpdateBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	// Check if blog exists and user is the owner
 	existingBlog, err := h.blogRepo.GetByID(blogID)
@@ -210,11 +226,14 @@ func (h *BlogHandler) DeleteBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	// Check if blog exists and user is the owner
 	existingBlog, err := h.blogRepo.GetByID(blogID)
@@ -237,7 +256,7 @@ func (h *BlogHandler) DeleteBlog(c *gin.Context) {
 }
 
 func (h *BlogHandler) LikeBlog(c *gin.Context) {
-	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
+	blogIDStr := c.Param("id")
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {
@@ -251,11 +270,14 @@ func (h *BlogHandler) LikeBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	// Check if user already liked the blog
 	alreadyLiked, err := h.blogRepo.HasUserLiked(blogID, userID)
@@ -284,7 +306,7 @@ func (h *BlogHandler) LikeBlog(c *gin.Context) {
 }
 
 func (h *BlogHandler) UnlikeBlog(c *gin.Context) {
-	blogIDStr := c.Param("id") // Changed from "blogId" to "id"
+	blogIDStr := c.Param("id")
 
 	blogID, err := uuid.Parse(blogIDStr)
 	if err != nil {
@@ -298,11 +320,14 @@ func (h *BlogHandler) UnlikeBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	if err := h.blogRepo.RemoveLike(blogID, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -345,11 +370,14 @@ func (h *BlogHandler) PublishBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	blog, err := h.blogRepo.GetByID(blogID)
 	if err != nil {
@@ -385,11 +413,14 @@ func (h *BlogHandler) CloseBlog(c *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
+
+	userID := intToUUID(userIDInt)
 
 	blog, err := h.blogRepo.GetByID(blogID)
 	if err != nil {
