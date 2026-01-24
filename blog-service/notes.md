@@ -8,3 +8,5 @@ psql
 \c <dbname> # switch context to database
 \dt # list tables
 SELECT \* FROM table;
+
+https://docs.docker.com/reference/dockerfile/
