@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import ReactMarkdown from "react-markdown";
 
 interface Blog {
   id: string;
@@ -213,8 +214,11 @@ export default function BlogsPage() {
                     </p>
                   )}
 
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                  {/*<p className="text-gray-700 dark:text-gray-300 mb-4">
                     {formatContent(blog.content)}
+                  </p>*/}
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    <ReactMarkdown>{formatContent(blog.content)}</ReactMarkdown>
                   </p>
 
                   {blog.tags && blog.tags.length > 0 && (

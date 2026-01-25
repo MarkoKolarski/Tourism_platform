@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import ReactMarkdown from "react-markdown";
 
 interface Comment {
   id: string;
@@ -243,7 +244,8 @@ export default function BlogDetailPage() {
 
             {/* Content */}
             <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
-              <div className="whitespace-pre-wrap">{blog.content}</div>
+              <ReactMarkdown>{blog.content}</ReactMarkdown>
+              {/*<div className="whitespace-pre-wrap">{blog.content}</div>*/}
             </div>
 
             {/* Images */}
