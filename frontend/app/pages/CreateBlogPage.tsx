@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import MarkdownEditor from "../components/MarkdownEditor";
 
 export default function CreateBlogPage() {
   const navigate = useNavigate();
@@ -169,7 +170,21 @@ export default function CreateBlogPage() {
 
             {/* Content */}
             <div className="mb-6">
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <MarkdownEditor
+            label="Sadržaj bloga *"
+            value={formData.content}
+            onChange={(content) => setFormData({ ...formData, content })}
+            placeholder="Share your travel story, experiences, tips, or insights...
+Use Markdown formatting.
+You can include:
+- Your journey details
+- Places you visited
+- Local cuisine you tried  
+- Cultural experiences
+- Travel tips and recommendations
+- Photo descriptions"
+          />
+              {/*<label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Blog Content *
               </label>
               <textarea
@@ -189,7 +204,7 @@ You can include:
 - Travel tips and recommendations
 - Photo descriptions"
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
-              />
+              />*/}
             </div>
 
             {/* Tags */}
