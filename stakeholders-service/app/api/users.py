@@ -155,7 +155,7 @@ async def login(
     """
     Login korisnika
     
-    - **username**: Korisničko ime
+    - **username**: Korisničko ime ili email
     - **password**: Lozinka
     
     Vraća JWT token i podatke o korisniku
@@ -163,7 +163,7 @@ async def login(
     user_service = UserService(db)
     
     # Autentifikuj korisnika
-    user = user_service.authenticate_user(user_data.username, user_data.password)
+    user = user_service.authenticate_user(user_data.username_or_email, user_data.password)
     
     if not user:
         raise HTTPException(

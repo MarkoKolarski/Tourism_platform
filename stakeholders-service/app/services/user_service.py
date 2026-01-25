@@ -12,9 +12,11 @@ class UserService:
     def __init__(self, db: Session):
         self.db = db
     
-    def authenticate_user(self, username: str, password: str) -> Optional[User]:
+    def authenticate_user(self, username_or_email: str, password: str) -> Optional[User]:
         """Autentifikuje korisnika i vraća korisnika ako su kredencijali ispravni"""
-        user = self.get_user_by_username(username)
+        user = self.get_user_by_username(username_or_email)
+        if not user:
+            user = self.get_user_by_email(username_or_email)
         if not user:
             return None
         if not verify_password(password, user.password_hash):
@@ -82,6 +84,10 @@ class UserService:
     def get_user_by_username(self, username: str) -> Optional[User]:
         """Dobija korisnika po korisničkom imenu"""
         return self.db.query(User).filter(User.username == username).first()
+
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """Dobija korisnika po email adresi"""
+        return self.db.query(User).filter(User.email == email).first()
     
     def update_user_profile(self, user_id: int, profile_data: UserProfileUpdate, current_user_id: int) -> User:
         """Ažurira profil korisnika"""

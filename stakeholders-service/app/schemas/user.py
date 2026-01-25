@@ -12,7 +12,7 @@ class UserRole(str, Enum):
 
 # Schema za login
 class UserLogin(BaseModel):
-    username: str
+    username_or_email: str
     password: str
 
 

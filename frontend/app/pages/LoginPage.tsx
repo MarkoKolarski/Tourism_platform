@@ -6,7 +6,7 @@ const API_URL = "/api/v1/users";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState("");
+  const [username_or_email, setUsernameOrEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("turista");
@@ -29,7 +29,7 @@ export default function LoginPage() {
         const response = await fetch(`${API_URL}/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username_or_email: username_or_email, password }),
         });
 
         if (!response.ok) {
@@ -53,7 +53,7 @@ export default function LoginPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
-            username, 
+            username: username_or_email, 
             email, 
             password,
             role,
@@ -125,12 +125,12 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Korisničko ime
+                Korisničko ime ili email adresa
               </label>
               <input
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={username_or_email}
+                onChange={(e) => setUsernameOrEmail(e.target.value)}
                 required
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Unesite korisničko ime"
