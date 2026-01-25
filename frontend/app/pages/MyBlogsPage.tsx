@@ -27,8 +27,8 @@ interface BlogsResponse {
   limit: string;
 }
 
-export default function BlogsPage() {
-  const { isAuthenticated, token } = useAuth();
+export default function MyBlogsPage() {
+  const { isAuthenticated, token, user } = useAuth();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +37,16 @@ export default function BlogsPage() {
   const [totalBlogs, setTotalBlogs] = useState(0);
   const limit = 10;
 
-  const fetchBlogs = async (page: number = 1, search: string = "") => {
+  const fetchMyBlogs = async (page: number = 1, search: string = "") => {
     try {
       setLoading(true);
+      
+      if (!isAuthenticated || !token || !user) {
+        setError("Please log in to view your blogs");
+        setLoading(false);
+        return;
+      }
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
@@ -49,31 +56,66 @@ export default function BlogsPage() {
         params.append("search", search.trim());
       }
 
-      const response = await fetch(`http://localhost:8004/api/blogs?${params}`);
+      const response = await fetch(`http://localhost:8004/api/blogs/user?${params}`, {
+        method: "GET",    
+        headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: BlogsResponse = await response.json();
-      setBlogs(data.blogs || []);
-      setTotalBlogs(parseInt(data.total as any) || 0);
+      const data: Blog[] = await response.json();
+      setBlogs(data || []);
+      setTotalBlogs(data.length || 0);
     } catch (err) {
-      console.error("Error fetching blogs:", err);
-      setError("Failed to load blogs. Please try again later.");
+      console.error("Error fetching my blogs:", err);
+      setError("Failed to load your blogs. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBlogs(currentPage, searchTerm);
-  }, [currentPage]);
+    if (isAuthenticated) {
+      fetchMyBlogs(currentPage, searchTerm);
+    }
+  }, [currentPage, isAuthenticated]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchBlogs(1, searchTerm);
+    fetchMyBlogs(1, searchTerm);
+  };
+
+  const handleDeleteBlog = async (blogId: string) => {
+    if (!isAuthenticated || !token) return;
+    
+    if (!confirm("Are you sure you want to delete this blog?")) return;
+
+    try {
+      const response = await fetch(`http://localhost:8004/api/blogs/${blogId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Remove the deleted blog from the list
+        setBlogs(blogs.filter(blog => blog.id !== blogId));
+        setTotalBlogs(prev => prev - 1);
+      } else {
+        const errorData = await response.json();
+        console.error("Delete error:", errorData);
+        alert("Failed to delete blog");
+      }
+    } catch (err) {
+      console.error("Error deleting blog:", err);
+      alert("Failed to delete blog");
+    }
   };
 
   const totalPages = Math.ceil(totalBlogs / limit);
@@ -92,6 +134,30 @@ export default function BlogsPage() {
       minute: "2-digit"
     });
   };
+
+  if (!isAuthenticated) {
+    return (
+      <Layout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🔒</div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Authentication Required
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              You need to be logged in to view your blogs.
+            </p>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Login to Continue
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (loading && blogs.length === 0) {
     return (
@@ -114,10 +180,10 @@ export default function BlogsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Travel Blogs 📖
+            My Blogs 📒
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Discover amazing travel stories and experiences from our community
+            Manage and view all your travel blogs
           </p>
         </div>
 
@@ -129,7 +195,7 @@ export default function BlogsPage() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search blogs..."
+                placeholder="Search your blogs..."
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
               />
               <button
@@ -140,24 +206,22 @@ export default function BlogsPage() {
               </button>
             </form>
 
-            {isAuthenticated && (
+            <div className="flex gap-2">
+              <Link
+                to="/blogs"
+                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+              >
+                <span>📖</span>
+                All Blogs
+              </Link>
               <Link
                 to="/blogs/create"
                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
               >
                 <span>✏️</span>
-                Write a Blog
+                Write New Blog
               </Link>
-            )}
-            {isAuthenticated && (
-              <Link
-                to="/my-blogs"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2"
-              >
-                <span>📒</span>
-                My Blog Page
-              </Link>
-            )}
+            </div>
           </div>
         </div>
 
@@ -172,20 +236,18 @@ export default function BlogsPage() {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No blogs found
+              You haven't written any blogs yet
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {searchTerm ? "Try adjusting your search terms" : "Be the first to share your travel story!"}
+              {searchTerm ? "Try adjusting your search terms" : "Start sharing your travel stories!"}
             </p>
-            {isAuthenticated && (
-              <Link
-                to="/blogs/create"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <span>✏️</span>
-                Write First Blog
-              </Link>
-            )}
+            <Link
+              to="/blogs/create"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <span>✏️</span>
+              Write Your First Blog
+            </Link>
           </div>
         ) : (
           <div className="space-y-6">
@@ -215,6 +277,20 @@ export default function BlogsPage() {
                         </span>
                       </div>
                     </div>
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/blogs/edit/${blog.id}`}
+                        className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors text-sm"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDeleteBlog(blog.id)}
+                        className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
 
                   {blog.description && (
@@ -223,9 +299,6 @@ export default function BlogsPage() {
                     </p>
                   )}
 
-                  {/*<p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {formatContent(blog.content)}
-                  </p>*/}
                   <p className="text-gray-700 dark:text-gray-300 mb-4">
                     <ReactMarkdown>{formatContent(blog.content)}</ReactMarkdown>
                   </p>
@@ -258,12 +331,14 @@ export default function BlogsPage() {
                       </span>
                     </div>
 
-                    <Link
-                      to={`/blogs/${blog.id}`}
-                      className="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                    >
-                      Read More →
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/blogs/${blog.id}`}
+                        className="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                      >
+                        View Details →
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -40,6 +40,7 @@ export default function BlogDetailPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   const fetchBlog = async () => {
     try {
@@ -52,11 +53,41 @@ export default function BlogDetailPage() {
 
       const data: Blog = await response.json();
       setBlog(data);
+      
+      // Proveri da li je trenutni korisnik lajkovao blog
+      if (isAuthenticated && token) {
+        await checkIfUserLiked();
+      }
     } catch (err) {
       console.error("Error fetching blog:", err);
       setError("Failed to load blog. Please try again later.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Funkcija za proveru da li je korisnik lajkovao blog
+  const checkIfUserLiked = async () => {
+    if (!isAuthenticated || !token || !user) return;
+
+    try {
+      // Ova funkcija zavisi od vašeg API-ja
+      // Ako imate endpoint za proveru lajka, koristite ga
+      // U suprotnom možete koristiti sledeći endpoint ili prilagoditi
+      const response = await fetch(`http://localhost:8004/api/blogs/${id}/like/status`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsLiked(data.liked || false);
+      }
+    } catch (err) {
+      console.error("Error checking like status:", err);
+      // Ako ne postoji endpoint, možete proveriti na osnovu podataka bloga
+      // ili ostaviti false kao podrazumevano
     }
   };
 
@@ -66,6 +97,51 @@ export default function BlogDetailPage() {
       return;
     }
 
+    if (likeLoading) return;
+
+    setLikeLoading(true);
+    try {
+      const endpoint = isLiked 
+        ? `http://localhost:8004/api/blogs/${id}/unlike`
+        : `http://localhost:8004/api/blogs/${id}/like`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        setIsLiked(!isLiked);
+        setBlog(prev => prev ? {
+          ...prev,
+          likeCount: isLiked ? prev.likeCount - 1 : prev.likeCount + 1
+        } : null);
+      } else {
+        const errorData = await response.json();
+        console.error("Like error:", errorData);
+        alert(`Failed to ${isLiked ? 'unlike' : 'like'} the blog: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Error liking blog:", err);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  // Alternativni pristup ako nemate /unlike endpoint
+  const handleLikeToggle = async () => {
+    if (!isAuthenticated || !token) {
+      alert("Please log in to like blogs");
+      return;
+    }
+
+    if (likeLoading) return;
+
+    setLikeLoading(true);
     try {
       const method = isLiked ? "DELETE" : "POST";
       const response = await fetch(`http://localhost:8004/api/blogs/${id}/like`, {
@@ -85,9 +161,13 @@ export default function BlogDetailPage() {
       } else {
         const errorData = await response.json();
         console.error("Like error:", errorData);
+        alert(`Failed to ${isLiked ? 'unlike' : 'like'} the blog: ${errorData.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error("Error liking blog:", err);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setLikeLoading(false);
     }
   };
 
@@ -139,7 +219,7 @@ export default function BlogDetailPage() {
     if (id) {
       fetchBlog();
     }
-  }, [id]);
+  }, [id, isAuthenticated]); // Dodaj isAuthenticated u dependencies
 
   if (loading) {
     return (
@@ -245,7 +325,6 @@ export default function BlogDetailPage() {
             {/* Content */}
             <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
               <ReactMarkdown>{blog.content}</ReactMarkdown>
-              {/*<div className="whitespace-pre-wrap">{blog.content}</div>*/}
             </div>
 
             {/* Images */}
@@ -258,6 +337,9 @@ export default function BlogDetailPage() {
                       src={image}
                       alt={`Blog image ${index + 1}`}
                       className="w-full h-64 object-cover rounded-lg"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x300?text=Image+Not+Available";
+                      }}
                     />
                   ))}
                 </div>
@@ -270,23 +352,33 @@ export default function BlogDetailPage() {
                 <div className="flex items-center gap-6">
                   {isAuthenticated ? (
                     <button
-                      onClick={handleLike}
+                      onClick={handleLikeToggle} // Ili handleLike zavisno od vašeg API-ja
+                      disabled={likeLoading}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                         isLiked
                           ? "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400"
                           : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
+                      } ${likeLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      {isLiked ? "❤️" : "🤍"} {blog.likeCount}
+                      {likeLoading ? (
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></span>
+                      ) : (
+                        <>
+                          {isLiked ? "❤️ Liked" : "🤍 Like"}
+                        </>
+                      )}
+                      <span className="ml-1 font-semibold">{blog.likeCount}</span>
                     </button>
                   ) : (
-                    <span className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      ❤️ {blog.likeCount}
-                    </span>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <span className="text-xl">❤️</span>
+                      <span className="font-semibold">{blog.likeCount} Likes</span>
+                    </div>
                   )}
                   
                   <span className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    💬 {blog.commentCount} Comments
+                    <span className="text-xl">💬</span>
+                    <span className="font-semibold">{blog.commentCount} Comments</span>
                   </span>
                 </div>
 

@@ -124,13 +124,22 @@ func (h *BlogHandler) GetAllBlogs(c *gin.Context) {
 }
 
 func (h *BlogHandler) GetBlogsByUserID(c *gin.Context) {
-	userID := c.Param("userId")
+	//userID := c.Param("userId")
 
-	uuidUserID, err := uuid.Parse(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
+
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	uuidUserID := intToUUID(userIDInt)
 
 	blogs, err := h.blogRepo.GetByUserID(uuidUserID)
 	if err != nil {

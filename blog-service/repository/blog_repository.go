@@ -94,7 +94,7 @@ func (r *BlogRepository) GetAll(page, limit, search, userID string) ([]models.Bl
 // GetByUserID vraća blogove određenog korisnika
 func (r *BlogRepository) GetByUserID(userID uuid.UUID) ([]models.Blog, error) {
 	var blogs []models.Blog
-	err := r.db.Where("user_id = ?", userID).
+	err := r.db.Where("userId = ?", userID).  //err := r.db.Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Find(&blogs).Error
 	return blogs, err
