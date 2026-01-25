@@ -138,7 +138,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: tourism-frontend
-    # Port removed - access through gateway only
+    ports:
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
