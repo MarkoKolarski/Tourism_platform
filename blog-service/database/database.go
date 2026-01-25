@@ -52,7 +52,7 @@ func InitDB() (*gorm.DB, error) {
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
 			SlowThreshold: time.Second,
-			LogLevel:      logger.Silent,
+			LogLevel:      logger.Warn,
 			Colorful:      true,
 		},
 	)
