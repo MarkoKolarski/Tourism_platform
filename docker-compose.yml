@@ -19,7 +19,9 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:15
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
     container_name: tourism-postgres
     environment:
       POSTGRES_USER: postgres
@@ -27,7 +29,6 @@ services:
       POSTGRES_DB: tourism  # Default database
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql # database init
     networks:
       - tourism-network
     healthcheck:
@@ -114,6 +115,9 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
     volumes:
       - ./logs:/app/logs  # Mount logs directory
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - tourism-network
     restart: unless-stopped
