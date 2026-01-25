@@ -29,6 +29,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: UserRole
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     
     @field_validator('username')
     def validate_username(cls, v):

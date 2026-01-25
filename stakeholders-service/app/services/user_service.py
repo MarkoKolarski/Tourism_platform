@@ -58,6 +58,11 @@ class UserService:
                 role=UserRole(user_data.role.value)
             )
             
+            if user_data.first_name:
+                db_user.first_name = user_data.first_name
+            if user_data.last_name: 
+                db_user.last_name = user_data.last_name
+            
             self.db.add(db_user)
             self.db.commit()
             self.db.refresh(db_user)

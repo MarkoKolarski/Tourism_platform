@@ -222,6 +222,8 @@ async def register_user(
             "id": new_user.id,
             "username": new_user.username,
             "email": new_user.email,
+            "first_name": new_user.first_name,
+            "last_name": new_user.last_name,
             "role": new_user.role.value if hasattr(new_user.role, 'value') else new_user.role
         }
     )
