@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # API Gateway - Nginx reverse proxy
   gateway:
     image: nginx:alpine
     container_name: tourism-gateway
@@ -19,7 +18,6 @@ services:
       - tourism-network
     restart: unless-stopped
 
-# postgres:
   postgres:
     image: postgres:15
     container_name: tourism-postgres
@@ -37,26 +35,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  # Neo4j baza za Followers Service
+
   neo4j:
-    image: neo4j:latest
-    container_name: tourism-neo4j
-    ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
-    environment:
-      - NEO4J_AUTH=neo4j/testpassword
-      - NEO4J_PLUGINS=["apoc"]
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    networks:
-      - tourism-network
-    healthcheck:
-      test: ["CMD-SHELL", "cypher-shell -u neo4j -p testpassword 'RETURN 1'"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      build:
+        context: ./neo4j
+        dockerfile: Dockerfile
+      container_name: tourism-neo4j
+      ports:
+        - "7474:7474"  # HTTP
+        - "7687:7687"  # Bolt
+      environment:
+        - NEO4J_AUTH=neo4j/testpassword
+        - NEO4J_PLUGINS=["apoc"]
+      volumes:
+        - neo4j_data:/data
+        - neo4j_logs:/logs
+      networks:
+        - tourism-network
+      healthcheck:
+        test: ["CMD-SHELL", "cypher-shell -u neo4j -p testpassword 'RETURN 1'"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
   followers-service:
     build:
