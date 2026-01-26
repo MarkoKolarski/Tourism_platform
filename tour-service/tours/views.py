@@ -132,10 +132,10 @@ def add_keypoint(request, tour_id):
     return JsonResponse({
         "message": "KeyPoint added",
         "keypoint": {
-            "id": kp.id,
+            #"id": kp.id,
             "name": kp.name,
             "latitude": kp.latitude,
             "longitude": kp.longitude
         },
-        "tour_length_km": tour.length_km
+        "tour_length_km": tour.total_length_km
     }, status=201)
