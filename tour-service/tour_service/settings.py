@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'tours',
 ]
 
 MIDDLEWARE = [
@@ -47,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'tour_service.middleware.auth.GatewayAuthMiddleware',
 ]
 
 ROOT_URLCONF = 'tour_service.urls'
@@ -76,7 +78,11 @@ WSGI_APPLICATION = 'tour_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        "NAME": "tourism_tour",
+        "USER": "postgres",
+        "PASSWORD": "ftn",
+        "HOST": "localhost",
+        "PORT": 5432,
     }
 }
 

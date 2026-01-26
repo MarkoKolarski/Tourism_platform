@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 from .enum import TourStatus, TransportType, ExecutionStatus
 
 class Tour(models.Model):
+    id = models.AutoField(primary_key=True)
     author_id = models.IntegerField()
     name = models.CharField(max_length=200)
     description = models.TextField()
