@@ -133,6 +133,28 @@ services:
       - tourism-network
     restart: unless-stopped
 
+  tour-service:
+    build:
+      context: ./tour-service
+      dockerfile: Dockerfile
+    container_name: tourism-tour-service
+    ports:
+      - "8005:8005"
+    environment:
+      - PORT=8005
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=tourism_tour
+      - DB_USER=postgres
+      - DB_PASSWORD=ftn
+      - SECRET_KEY=dev-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tourism-network
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend
@@ -168,6 +190,7 @@ services:
       - followers-service
       - purchase-service
       - blog-service
+      - tour-service
       - frontend
     networks:
       - tourism-network

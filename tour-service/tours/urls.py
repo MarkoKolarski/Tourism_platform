@@ -7,7 +7,7 @@ urlpatterns = [
     path('<int:tour_id>/keypoints/add/', views.add_keypoint, name='add_keypoint'),
     path("<int:tour_id>/publish/", views.publish_tour),
     path("<int:tour_id>/archive/", views.archive_tour),
-    path("status/<string:status>/", views.get_tours_by_status),
+    path("status/<str:status>/", views.get_tours_by_status),
     path("<int:tour_id>/activate/", views.activate_tour),
     #path("<int:tour_id>/", views.get_tour_details),
 ]

@@ -77,12 +77,12 @@ WSGI_APPLICATION = 'tour_service.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        "NAME": "tourism_tour",
-        "USER": "postgres",
-        "PASSWORD": "ftn",
-        "HOST": "localhost",
-        "PORT": 5432,
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tourism_tour',
+        'USER': 'postgres',
+        'PASSWORD': 'ftn',
+        'HOST': 'tourism-postgres', # tourism-postgres/localhost
+        'PORT': '5432',
     }
 }
 
