@@ -46,6 +46,19 @@ export default function HomePage() {
       ]
     },
     {
+      name: "Tour Service",
+      description: "Kreiranje, upravljanje i pregled turističkih tura",
+      icon: "🗺️",
+      color: "bg-yellow-500",
+      link: "/tours",
+      features: [
+        "Kreiranje tura (draft/published/archived)",
+        "Mapa i ključne tačke",
+        "Računanje dužine ture",
+        "Različita vremena obilaska"
+      ]
+    },
+    {
       name: "Purchase Service",
       description: "Kupovina tura, SAGA pattern i transakcije",
       icon: "🛒",
@@ -57,7 +70,8 @@ export default function HomePage() {
         "SAGA orchestration",
         "Purchase tokeni"
       ]
-    }
+    },
+
   ];
 
   return (
@@ -84,7 +98,7 @@ export default function HomePage() {
             
             <div className="flex justify-center gap-4 flex-wrap mt-8">
               <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg">
-                <div className="text-2xl font-bold">4</div>
+                <div className="text-2xl font-bold">5</div>
                 <div className="text-sm">Mikroservisa</div>
               </div>
               <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg">
@@ -239,16 +253,20 @@ export default function HomePage() {
             <div className="text-sm text-gray-600 dark:text-gray-400">Stakeholders Port</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-orange-600 mb-2">8004</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Blog Port</div>
-          </div>
-          <div className="text-center">
             <div className="text-4xl font-bold text-green-600 mb-2">8002</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Followers Port</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-purple-600 mb-2">8003</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Purchase Port</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-orange-600 mb-2">8004</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Blog Port</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-yellow-600 mb-2">8005</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Tour Port</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-indigo-600 mb-2">100%</div>

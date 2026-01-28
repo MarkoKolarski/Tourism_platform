@@ -214,6 +214,8 @@ def archive_tour(request, tour_id):
     }, status=200)
 
 def func_get_tour_by_status(status):
+    if status not in {"draft", "published", "archived"}:
+        raise ValueError("Invalid tour status")
     tours = Tour.objects.filter(status=status)
     return tours
 
