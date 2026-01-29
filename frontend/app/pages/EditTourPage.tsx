@@ -7,10 +7,14 @@ interface Tour {
   id: number;
   name: string;
   description: string;
+  difficulty: number;
+  tags: string[];
   price: number;
-  duration: number;
-  max_guests: number;
+  status: string;
+  total_length_km: number;
   author_id: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function EditTourPage() {
@@ -24,13 +28,13 @@ export default function EditTourPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
-    duration: "",
-    max_guests: ""
+    difficulty: "1",
+    tags: "",
+    price: "0"
   });
 
   // Redirect if not VODIC
-  if (user?.role.toUpperCase() !== "VODIC") {
+  if (user?.role && user.role.toUpperCase() !== "VODIC") {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -67,9 +71,9 @@ export default function EditTourPage() {
         setFormData({
           name: tourData.name,
           description: tourData.description,
-          price: tourData.price.toString(),
-          duration: tourData.duration.toString(),
-          max_guests: tourData.max_guests.toString()
+          difficulty: tourData.difficulty.toString(),
+          tags: tourData.tags.join(", "),
+          price: tourData.price.toString()
         });
       } catch (err) {
         setError("Failed to load tour");
@@ -87,6 +91,8 @@ export default function EditTourPage() {
     setSaving(true);
 
     try {
+      const tagsArray = formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0);
+      
       const response = await fetch(`/api/v1/tours/${id}`, {
         method: "PUT",
         headers: {
@@ -96,9 +102,9 @@ export default function EditTourPage() {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
-          price: parseFloat(formData.price),
-          duration: parseInt(formData.duration),
-          max_guests: parseInt(formData.max_guests)
+          difficulty: parseInt(formData.difficulty),
+          tags: tagsArray,
+          price: parseFloat(formData.price)
         })
       });
 
@@ -187,6 +193,37 @@ export default function EditTourPage() {
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Težina *
+              </label>
+              <select
+                required
+                value={formData.difficulty}
+                onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="1">Lako</option>
+                <option value="2">Srednje</option>
+                <option value="3">Teško</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tagovi *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="priroda, istorija, avantura"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Odvojeno zarezima</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Cena (RSD) *
               </label>
               <input
@@ -196,34 +233,6 @@ export default function EditTourPage() {
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Trajanje (dani) *
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Max gostiju *
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={formData.max_guests}
-                onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>

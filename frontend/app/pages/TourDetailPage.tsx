@@ -7,9 +7,11 @@ interface Tour {
   id: number;
   name: string;
   description: string;
+  difficulty: number;
+  tags: string[];
   price: number;
-  duration: number;
-  max_guests: number;
+  status: string;
+  total_length_km: number;
   author_id: number;
   created_at: string;
   updated_at: string;
@@ -94,6 +96,15 @@ export default function TourDetailPage() {
       style: "currency",
       currency: "RSD"
     }).format(price);
+  };
+
+  const getDifficultyLabel = (difficulty: number) => {
+    switch(difficulty) {
+      case 1: return "Lako";
+      case 2: return "Srednje";
+      case 3: return "Teško";
+      default: return "Nepoznato";
+    }
   };
 
   if (loading) {
@@ -268,20 +279,18 @@ export default function TourDetailPage() {
               
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-400">Trajanje</span>
-                  <span className="font-medium">
-                    {tour.duration} {tour.duration === 1 ? 'dan' : 'dana'}
-                  </span>
+                  <span className="text-gray-600 dark:text-gray-400">Težina</span>
+                  <span className="font-medium">{getDifficultyLabel(tour.difficulty)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-400">Maksimalno gostiju</span>
-                  <span className="font-medium">{tour.max_guests}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Dužina</span>
+                  <span className="font-medium">{tour.total_length_km.toFixed(1)} km</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-400">ID ture</span>
-                  <span className="font-medium font-mono">#{tour.id}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Status</span>
+                  <span className="font-medium capitalize">{tour.status}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-3">
