@@ -25,7 +25,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	api.GET("/tours/:id/travel-times", getTravelTimes(db))
 
 	// Protected routes - require authentication
-	protected := api.Use(middleware.AuthMiddleware(cfg))
+	protected := api.Use(middleware.NewAuthMiddleware(cfg, db))
 
 	// Tourist routes
 	protected.POST("/tours/:id/reviews", createReview(db))
@@ -93,15 +93,33 @@ func getTour(db *sql.DB) gin.HandlerFunc {
 
 func createTour(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Println("[createTour] Called")
 		var req models.CreateTourRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Printf("[createTour] Invalid request body: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
 		userIDInterface, exists := c.Get("user_id")
+		log.Printf("[createTour] user_id from context: %v (exists: %v)", userIDInterface, exists)
 		if !exists {
+			log.Println("[createTour] User ID not found in token")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in token"})
+			return
+		}
+
+		roleInterface, roleExists := c.Get("role")
+		log.Printf("[createTour] role from context: %v (exists: %v)", roleInterface, roleExists)
+		if !roleExists {
+			log.Println("[createTour] Role not found in token")
+			c.JSON(http.StatusForbidden, gin.H{"error": "Role not found in token"})
+			return
+		}
+
+		if roleInterface != "VODIC" {
+			log.Printf("[createTour] Insufficient permissions: required VODIC, got %v", roleInterface)
+			c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 			return
 		}
 
@@ -113,26 +131,32 @@ func createTour(db *sql.DB) gin.HandlerFunc {
 			var err error
 			authorID, err = strconv.Atoi(v)
 			if err != nil {
+				log.Printf("[createTour] Invalid user ID format: %v", v)
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 				return
 			}
 		default:
+			log.Printf("[createTour] Invalid user ID type: %T", userIDInterface)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID type"})
 			return
 		}
 
+		log.Printf("[createTour] Creating tour for authorID: %d, request: %+v", authorID, req)
 		tour, err := models.CreateTour(db, req, authorID)
 		if err != nil {
+			log.Printf("[createTour] Failed to create tour: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tour"})
 			return
 		}
 
+		log.Printf("[createTour] Tour created successfully: %+v", tour)
 		c.JSON(http.StatusCreated, gin.H{"tour": tour})
 	}
 }
 
 func updateTour(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Println("[updateTour] Called")
 		idParam := c.Param("id")
 		id, err := strconv.Atoi(idParam)
 		if err != nil {
@@ -184,6 +208,7 @@ func updateTour(db *sql.DB) gin.HandlerFunc {
 
 func deleteTour(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Println("[deleteTour] Called")
 		idParam := c.Param("id")
 		id, err := strconv.Atoi(idParam)
 		if err != nil {
