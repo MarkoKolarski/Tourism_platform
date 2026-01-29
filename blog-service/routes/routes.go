@@ -27,8 +27,6 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		// Blog routes - public read access
 		api.GET("/blogs", blogHandler.GetAllBlogs)
 		api.GET("/blogs/:id", blogHandler.GetBlogByID)
-		//api.GET("/blogs/user/:userId", blogHandler.GetBlogsByUserID)
-		api.GET("/blogs/user", blogHandler.GetBlogsByUserID)
 		api.GET("/blogs/:id/likes/count", blogHandler.GetLikeCount)
 		api.GET("/blogs/:id/comments", commentHandler.GetCommentsByBlogID)
 	}
@@ -37,6 +35,9 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	protected := api.Group("/")
 	protected.Use(middleware.AuthMiddleware())
 	{
+		// User's own blogs
+		protected.GET("/blogs/user", blogHandler.GetBlogsByUserID)
+
 		// Blog management
 		protected.POST("/blogs", blogHandler.CreateBlog)
 		protected.PUT("/blogs/:id", blogHandler.UpdateBlog)
