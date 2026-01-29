@@ -131,7 +131,6 @@ export default function CreateTourPage() {
               <option value={3}>Teško - Za iskusne</option>
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Tagovi *

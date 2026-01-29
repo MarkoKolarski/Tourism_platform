@@ -23,6 +23,10 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	api.GET("/tours/:id/keypoints/first", getFirstKeyPoint(db))
 	api.GET("/tours/:id/reviews", getReviews(db))
 	api.GET("/tours/:id/travel-times", getTravelTimes(db))
+	api.GET("/tours/for-tourists", getToursForTourists(db))
+	api.GET("/tours/status/:status", getToursByStatus(db))
+
+
 
 	// Protected routes - require authentication
 	protected := api.Use(middleware.NewAuthMiddleware(cfg, db))
@@ -740,5 +744,67 @@ func createReview(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusCreated, gin.H{"review": review})
+	}
+}
+
+func getToursForTourists(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Println("[getToursForTourists] Fetching tours for tourists...")
+		
+		toursData, err := models.GetToursForTourists(db)
+		if err != nil {
+			log.Printf("[getToursForTourists] Error fetching tours: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tours", "details": err.Error()})
+			return
+		}
+
+		log.Printf("[getToursForTourists] Successfully fetched %d tours for tourists", len(toursData))
+		c.JSON(http.StatusOK, gin.H{"tours": toursData})
+	}
+}
+
+// Nova funkcija za dobijanje tura po statusu
+func getToursByStatus(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		status := c.Param("status")
+		log.Printf("[getToursByStatus] Fetching tours with status: %s", status)
+		
+		// Validacija statusa
+		validStatuses := map[string]bool{
+			"draft":     true,
+			"published": true,
+			"archived":  true,
+		}
+		
+		if !validStatuses[status] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status value"})
+			return
+		}
+
+		tours, err := models.GetToursByStatus(db, status)
+		if err != nil {
+			log.Printf("[getToursByStatus] Error fetching tours: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tours", "details": err.Error()})
+			return
+		}
+
+		log.Printf("[getToursByStatus] Successfully fetched %d tours with status %s", len(tours), status)
+		
+		// Konvertuj u odgovor koji odgovara Python verziji
+		toursData := make([]gin.H, len(tours))
+		for i, t := range tours {
+			toursData[i] = gin.H{
+				"id":          t.ID,
+				"name":        t.Name,
+				"description": t.Description,
+				"difficulty":  t.Difficulty,
+				"tags":        t.Tags,
+				"status":      t.Status,
+				"price":       t.Price,
+				"created_at":  t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), // ISO format
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{"tours": toursData})
 	}
 }

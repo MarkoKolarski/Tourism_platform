@@ -347,3 +347,88 @@ func ArchiveTour(db *sql.DB, tourID int, authorID int) (*Tour, error) {
 
 	return &tour, nil
 }
+
+func GetToursForTourists(db *sql.DB) ([]map[string]interface{}, error) {
+	query := `
+    SELECT id, name, description, difficulty, tags, price, status, created_at
+    FROM tours WHERE status = $1`
+
+	rows, err := db.Query(query, StatusPublished)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var toursData []map[string]interface{}
+	for rows.Next() {
+		var tour Tour
+		err := rows.Scan(
+			&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+			pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		var firstKeypoint *map[string]interface{}
+		keypoints, err := GetKeypointsByTourID(db, tour.ID)
+		if err == nil && len(keypoints) > 0 {
+			for _, kp := range keypoints {
+				if kp.Order == 1 {
+					firstKeypoint = &map[string]interface{}{
+						"name":      kp.Name,
+						"latitude":  kp.Latitude,
+						"longitude": kp.Longitude,
+					}
+					break
+				}
+			}
+		}
+
+		tourData := map[string]interface{}{
+			"id":          tour.ID,
+			"name":        tour.Name,
+			"description": tour.Description,
+			"difficulty":  tour.Difficulty,
+			"tags":        tour.Tags,
+			"status":      tour.Status,
+			"price":       tour.Price,
+			"created_at":  tour.CreatedAt.Format(time.RFC3339),
+			"first_keypoint": firstKeypoint,
+		}
+
+		toursData = append(toursData, tourData)
+	}
+
+	return toursData, nil
+}
+
+func GetToursByStatus(db *sql.DB, status string) ([]Tour, error) {
+	query := `
+    SELECT id, name, description, difficulty, tags, price, status, total_length_km,
+           author_id, published_at, archived_at, created_at, updated_at
+    FROM tours WHERE status = $1`
+
+	rows, err := db.Query(query, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tours []Tour
+	for rows.Next() {
+		var tour Tour
+		err := rows.Scan(
+			&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+			pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+			&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
+			&tour.CreatedAt, &tour.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tours = append(tours, tour)
+	}
+
+	return tours, nil
+}

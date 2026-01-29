@@ -57,9 +57,14 @@ export default function Layout({ children }: LayoutProps) {
                       Admin
                     </Link>
                   )}
+                  {user?.role === "turista" && (
+                    <Link to="/tourist-tours/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                      Pregled objavljenih tura
+                    </Link>
+                  )}
                   {user?.role === "vodic" && (
                     <>
-                    <Link to="/tours/my-tours" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
+                    <Link to="/my-tours" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
                       Moje ture
                     </Link>
                     <Link to="/tours/create" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
@@ -137,9 +142,14 @@ export default function Layout({ children }: LayoutProps) {
                       Admin
                     </Link>
                   )}
+                  {user?.role === "turista" && (
+                    <Link to="/tourist-tours/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      Pregled objavljenih tura
+                    </Link>
+                  )}
                   {user?.role === "vodic" && (
                     <>
-                    <Link to="/tours/my-tours" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <Link to="/my-tours" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                       Moje ture
                     </Link>
                     <Link to="/tours/create" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
