@@ -20,9 +20,15 @@ interface Tour {
 export default function MyToursPage() {
   const { token, user } = useAuth();
   const [tours, setTours] = useState<Tour[]>([]);
+  const [filteredTours, setFilteredTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  
+  // State za filtere
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("newest");
 
   // Redirect if not VODIC
   if (user?.role.toUpperCase() !== "VODIC") {
@@ -58,6 +64,7 @@ export default function MyToursPage() {
 
       const data = await response.json();
       setTours(data.tours || []);
+      setFilteredTours(data.tours || []);
     } catch (err) {
       console.error("Error fetching tours:", err);
       setError("Failed to load your tours");
@@ -65,6 +72,56 @@ export default function MyToursPage() {
       setLoading(false);
     }
   };
+
+  // Funkcija za filtriranje i sortiranje tura
+  const applyFiltersAndSort = () => {
+    let result = [...tours];
+
+    // Filter po statusu
+    if (statusFilter !== "all") {
+      result = result.filter(tour => tour.status === statusFilter);
+    }
+
+    // Filter po pretrazi
+    if (searchTerm.trim() !== "") {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(tour => 
+        tour.name.toLowerCase().includes(term) ||
+        tour.description.toLowerCase().includes(term) ||
+        tour.tags.some(tag => tag.toLowerCase().includes(term))
+      );
+    }
+
+    // Sortiranje
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "name_asc":
+          return a.name.localeCompare(b.name);
+        case "name_desc":
+          return b.name.localeCompare(a.name);
+        case "price_asc":
+          return a.price - b.price;
+        case "price_desc":
+          return b.price - a.price;
+        case "length_asc":
+          return a.total_length_km - b.total_length_km;
+        case "length_desc":
+          return b.total_length_km - a.total_length_km;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredTours(result);
+  };
+
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [statusFilter, searchTerm, sortBy, tours]);
 
   const handleDelete = async (tourId: number) => {
     if (!confirm("Da li ste sigurni da želite da obrišete ovu turu?")) {
@@ -127,6 +184,18 @@ export default function MyToursPage() {
     }
   };
 
+  const getStatusCounts = () => {
+    const counts = {
+      all: tours.length,
+      draft: tours.filter(t => t.status === 'draft').length,
+      published: tours.filter(t => t.status === 'published').length,
+      archived: tours.filter(t => t.status === 'archived').length
+    };
+    return counts;
+  };
+
+  const statusCounts = getStatusCounts();
+
   if (loading) {
     return (
       <Layout>
@@ -168,28 +237,129 @@ export default function MyToursPage() {
           </div>
         )}
 
-        {tours.length === 0 ? (
+        {/* Filter sekcija */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {/* Pretraga */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Pretraži ture
+              </label>
+              <input
+                type="text"
+                placeholder="Pretraži po nazivu, opisu ili tagovima..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            {/* Filter po statusu */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Filter po statusu
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusFilter === "all" ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"}`}
+                >
+                  Sve ({statusCounts.all})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("draft")}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusFilter === "draft" ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"}`}
+                >
+                  Draft ({statusCounts.draft})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("published")}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusFilter === "published" ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"}`}
+                >
+                  Objavljene ({statusCounts.published})
+                </button>
+                <button
+                  onClick={() => setStatusFilter("archived")}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${statusFilter === "archived" ? "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"}`}
+                >
+                  Arhivirane ({statusCounts.archived})
+                </button>
+              </div>
+            </div>
+
+            {/* Sortiranje */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Sortiraj po
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              >
+                <option value="newest">Najnovije</option>
+                <option value="oldest">Najstarije</option>
+                <option value="name_asc">Naziv (A-Z)</option>
+                <option value="name_desc">Naziv (Z-A)</option>
+                <option value="price_asc">Cena (niža-viša)</option>
+                <option value="price_desc">Cena (viša-niža)</option>
+                <option value="length_asc">Dužina (kraće-duže)</option>
+                <option value="length_desc">Dužina (duže-kraće)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Statistika */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statusCounts.all}</div>
+              <div className="text-sm text-blue-800 dark:text-blue-300">Ukupno tura</div>
+            </div>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{statusCounts.draft}</div>
+              <div className="text-sm text-yellow-800 dark:text-yellow-300">Draft tura</div>
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{statusCounts.published}</div>
+              <div className="text-sm text-green-800 dark:text-green-300">Objavljeno</div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{statusCounts.archived}</div>
+              <div className="text-sm text-gray-800 dark:text-gray-300">Arhivirano</div>
+            </div>
+          </div>
+        </div>
+
+        {filteredTours.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🗺️</div>
+            <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Nemate kreiranih tura
+              {tours.length === 0 ? "Nemate kreiranih tura" : "Nema pronađenih tura"}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Kreirajte svoju prvu turu da počnete
+              {tours.length === 0 
+                ? "Kreirajte svoju prvu turu da počnete"
+                : "Pokušajte da promenite filtere ili pretragu"}
             </p>
-            <Link
-              to="/tours/create"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Kreiraj prvu turu
-            </Link>
+            {tours.length === 0 && (
+              <Link
+                to="/tours/create"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Kreiraj prvu turu
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid gap-6">
-            {tours.map((tour) => (
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
+              Prikazano {filteredTours.length} od {tours.length} tura
+            </div>
+            
+            {filteredTours.map((tour) => (
               <div
                 key={tour.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
               >
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -255,14 +425,22 @@ export default function MyToursPage() {
 
                   <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ID: {tour.id}
+                      ID: {tour.id} • Ažurirano: {formatDate(tour.updated_at)}
                     </span>
-                    <Link
-                      to={`/tours/${tour.id}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      Pogledaj detalje →
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/tours/edit/${tour.id}`}
+                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Uredi osnovne podatke
+                      </Link>
+                      <Link
+                        to={`/tours/${tour.id}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Pogledaj detalje →
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
