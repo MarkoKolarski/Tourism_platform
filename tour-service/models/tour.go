@@ -371,7 +371,7 @@ func GetToursForTourists(db *sql.DB) ([]map[string]interface{}, error) {
 		}
 
 		var firstKeypoint *map[string]interface{}
-		keypoints, err := GetKeypointsByTourID(db, tour.ID)
+		keypoints, err := GetKeyPointsByTourID(db, tour.ID)
 		if err == nil && len(keypoints) > 0 {
 			for _, kp := range keypoints {
 				if kp.Order == 1 {
@@ -379,6 +379,7 @@ func GetToursForTourists(db *sql.DB) ([]map[string]interface{}, error) {
 						"name":      kp.Name,
 						"latitude":  kp.Latitude,
 						"longitude": kp.Longitude,
+						"image_url": kp.ImageURL,
 					}
 					break
 				}
@@ -393,6 +394,7 @@ func GetToursForTourists(db *sql.DB) ([]map[string]interface{}, error) {
 			"tags":        tour.Tags,
 			"status":      tour.Status,
 			"price":       tour.Price,
+			"total_length_km": tour.TotalLengthKm,
 			"created_at":  tour.CreatedAt.Format(time.RFC3339),
 			"first_keypoint": firstKeypoint,
 		}
