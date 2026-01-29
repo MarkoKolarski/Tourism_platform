@@ -7,7 +7,7 @@
 
 # TOFIX:
 - fix 9. user must follow other user to see their blogs & add review
-- fix 16. fix purchasing/reserving tour tour-service needs to communicate with purcase-service
+- fix 16. fix purchasing/reserving tour tour-service needs to communicate with purcase-service (maybe use RPC?)
 
 # TODO:
 - 11.
