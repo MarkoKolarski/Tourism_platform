@@ -5,21 +5,18 @@
 - 10.
 - 15.
 
+# TOFIX:
+- fix 9. user must follow other user to see their blogs & add review
+- fix 16. fix purchasing/reserving tour tour-service needs to communicate with purcase-service
+
 # TODO:
-
-# blog-service
-- fix 9.
-- user must follow other user to see their blogs & add review
-
-# tour-service
 - 11.
 - 13. 
-## VODIC:
-- frontend:
-    - select keypoints on map
-    - edit keypoints on map
-    - delete keypoints on map
-    - delete travel_time
+    - frontend:
+        - select keypoints on map
+        - edit keypoints on map
+        - delete keypoints on map
+        - delete travel_time
 
 - 12. tourist can make a review for a tour (rating: 1-5, comment, user info, tour attendance date, review date)
 - 17. finish frontend for TourExecution (backend is done?)
