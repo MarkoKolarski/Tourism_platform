@@ -10,3 +10,4 @@ psql
 SELECT \* FROM table;
 
 https://docs.docker.com/reference/dockerfile/
+https://www.jwt.io/
