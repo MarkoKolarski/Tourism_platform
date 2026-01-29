@@ -7,9 +7,11 @@ interface Tour {
   id: number;
   name: string;
   description: string;
+  difficulty: number;
+  tags: string[];
   price: number;
-  duration: number;
-  max_guests: number;
+  status: string;
+  total_length_km: number;
   author_id: number;
   created_at: string;
   updated_at: string;
@@ -103,6 +105,28 @@ export default function MyToursPage() {
     });
   };
 
+  const getDifficultyLabel = (difficulty: number) => {
+    switch(difficulty) {
+      case 1: return "Lako";
+      case 2: return "Srednje";
+      case 3: return "Teško";
+      default: return "Nepoznato";
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'draft':
+        return <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-xs font-medium">Draft</span>;
+      case 'published':
+        return <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs font-medium">Objavljena</span>;
+      case 'archived':
+        return <span className="px-3 py-1 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">Arhivirana</span>;
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -169,10 +193,18 @@ export default function MyToursPage() {
               >
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {tour.name}
-                    </h3>
-                    <div className="flex gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                          {tour.name}
+                        </h3>
+                        {getStatusBadge(tour.status)}
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 line-clamp-2">
+                        {tour.description}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
                       <Link
                         to={`/tours/manage/${tour.id}`}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -189,28 +221,37 @@ export default function MyToursPage() {
                     </div>
                   </div>
 
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {tour.description}
-                  </p>
-
                   <div className="grid md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Težina:</span>
+                      <div className="font-medium">{getDifficultyLabel(tour.difficulty)}</div>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Dužina:</span>
+                      <div className="font-medium">{tour.total_length_km.toFixed(1)} km</div>
+                    </div>
                     <div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">Cena:</span>
                       <div className="font-medium">{tour.price.toFixed(2)} RSD</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Trajanje:</span>
-                      <div className="font-medium">{tour.duration} dana</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Max gostiju:</span>
-                      <div className="font-medium">{tour.max_guests}</div>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">Kreirana:</span>
                       <div className="font-medium text-sm">{formatDate(tour.created_at)}</div>
                     </div>
                   </div>
+
+                  {tour.tags && tour.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {tour.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-sm text-gray-500 dark:text-gray-400">
