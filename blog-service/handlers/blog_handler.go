@@ -364,6 +364,39 @@ func (h *BlogHandler) GetLikeCount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"likeCount": count})
 }
 
+func (h *BlogHandler) GetUserLikeStatus(c *gin.Context) {
+	blogIDStr := c.Param("id")
+
+	blogID, err := uuid.Parse(blogIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid blog ID"})
+		return
+	}
+
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Convert string userID to int, then to UUID
+	userIDInt, err := strconv.Atoi(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
+	userID := intToUUID(userIDInt)
+
+	liked, err := h.blogRepo.HasUserLiked(blogID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"liked": liked})
+}
+
 func (h *BlogHandler) PublishBlog(c *gin.Context) {
 	blogIDStr := c.Param("id")
 

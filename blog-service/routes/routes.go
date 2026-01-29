@@ -38,6 +38,9 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		// User's own blogs
 		protected.GET("/blogs/user", blogHandler.GetBlogsByUserID)
 
+		// Check if user liked a blog
+		protected.GET("/blogs/:id/like/status", blogHandler.GetUserLikeStatus)
+
 		// Blog management
 		protected.POST("/blogs", blogHandler.CreateBlog)
 		protected.PUT("/blogs/:id", blogHandler.UpdateBlog)
