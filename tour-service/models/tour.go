@@ -110,7 +110,7 @@ func GetAllTours(db *sql.DB) ([]Tour, error) {
 	}
 	defer rows.Close()
 
-	var tours []Tour
+	tours := []Tour{} // Initialize as empty slice instead of nil
 	for rows.Next() {
 		var tour Tour
 		err := rows.Scan(
@@ -245,7 +245,7 @@ func GetToursByAuthor(db *sql.DB, authorID int) ([]Tour, error) {
 	}
 	defer rows.Close()
 
-	var tours []Tour
+	tours := []Tour{} // Initialize as empty slice instead of nil
 	for rows.Next() {
 		var tour Tour
 		err := rows.Scan(
