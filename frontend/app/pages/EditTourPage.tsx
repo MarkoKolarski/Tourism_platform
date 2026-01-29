@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 
@@ -14,13 +14,20 @@ interface Tour {
 }
 
 export default function EditTourPage() {
-  const { token, user } = useAuth();
   const { id } = useParams();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
+  const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tour, setTour] = useState<Tour | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    duration: "",
+    max_guests: ""
+  });
 
   // Redirect if not VODIC
   if (user?.role !== "VODIC") {
@@ -41,72 +48,66 @@ export default function EditTourPage() {
     );
   }
 
-  const fetchTour = async () => {
-    try {
-      const response = await fetch(`/api/v1/tours/${id}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error("Tour not found");
-      }
-
-      const data = await response.json();
-      setTour(data.tour);
-    } catch (err) {
-      setError("Failed to load tour");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (id) {
-      fetchTour();
-    }
-  }, [id]);
+    const fetchTour = async () => {
+      try {
+        const response = await fetch(`/api/v1/tours/${id}`);
+        if (!response.ok) throw new Error("Failed to fetch tour");
+        
+        const data = await response.json();
+        const tourData = data.tour;
+        
+        // Check if user is the author
+        if (tourData.author_id !== user?.id) {
+          setError("You are not authorized to edit this tour");
+          return;
+        }
+        
+        setTour(tourData);
+        setFormData({
+          name: tourData.name,
+          description: tourData.description,
+          price: tourData.price.toString(),
+          duration: tourData.duration.toString(),
+          max_guests: tourData.max_guests.toString()
+        });
+      } catch (err) {
+        setError("Failed to load tour");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!tour) return;
-    
-    const { name, value, type } = e.target;
-    setTour(prev => prev ? {
-      ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value
-    } : null);
-  };
+    if (id) fetchTour();
+  }, [id, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tour) return;
-
-    setSaving(true);
     setError(null);
+    setSaving(true);
 
     try {
-      const response = await fetch(`/api/v1/tours/${tour.id}`, {
+      const response = await fetch(`/api/v1/tours/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: tour.name,
-          description: tour.description,
-          price: tour.price,
-          duration: tour.duration,
-          max_guests: tour.max_guests
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          duration: parseInt(formData.duration),
+          max_guests: parseInt(formData.max_guests)
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update tour");
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update tour");
       }
 
-      navigate("/my-tours");
+      navigate(`/tours/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update tour");
     } finally {
@@ -119,7 +120,7 @@ export default function EditTourPage() {
       <Layout>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-300 rounded w-1/2 mb-6"></div>
+            <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="h-12 bg-gray-300 rounded"></div>
@@ -131,18 +132,12 @@ export default function EditTourPage() {
     );
   }
 
-  if (!tour) {
+  if (error && !tour) {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">❌</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Tura nije pronađena
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              {error || "Tura koju tražite ne postoji ili nemate dozvolu da je menjate."}
-            </p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+            <p className="text-red-800 dark:text-red-200">{error}</p>
           </div>
         </div>
       </Layout>
@@ -152,14 +147,9 @@ export default function EditTourPage() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Uredi turu ✏️
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Uredite informacije o vašoj turi
-          </p>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+          Uredi turu ✏️
+        </h1>
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
@@ -168,105 +158,91 @@ export default function EditTourPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="card">
-            <div className="grid gap-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Naziv ture *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  value={tour.name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Naziv ture *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
 
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Opis ture *
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  required
-                  rows={4}
-                  value={tour.description}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Opis *
+            </label>
+            <textarea
+              required
+              rows={6}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Cena (RSD) *
-                  </label>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    required
-                    min="0"
-                    step="0.01"
-                    value={tour.price}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cena (RSD) *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
 
-                <div>
-                  <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Trajanje (dani) *
-                  </label>
-                  <input
-                    type="number"
-                    id="duration"
-                    name="duration"
-                    required
-                    min="1"
-                    value={tour.duration}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Trajanje (dani) *
+              </label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
 
-              <div>
-                <label htmlFor="max_guests" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Maksimalno gostiju *
-                </label>
-                <input
-                  type="number"
-                  id="max_guests"
-                  name="max_guests"
-                  required
-                  min="1"
-                  value={tour.max_guests}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Max gostiju *
+              </label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={formData.max_guests}
+                onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
             </div>
           </div>
 
           <div className="flex gap-4">
             <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? "Čuvanje..." : "Sačuvaj izmene"}
-            </button>
-            <button
               type="button"
-              onClick={() => navigate("/my-tours")}
-              className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => navigate(`/tours/${id}`)}
+              className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Otkaži
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? "Čuvanje..." : "Sačuvaj izmene"}
             </button>
           </div>
         </form>

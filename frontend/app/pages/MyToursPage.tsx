@@ -44,7 +44,7 @@ export default function MyToursPage() {
   const fetchMyTours = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/v1/tours", {
+      const response = await fetch("/api/v1/tours/my", {
         headers: {
           "Authorization": `Bearer ${token}`
         }

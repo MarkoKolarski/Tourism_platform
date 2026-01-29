@@ -3,34 +3,48 @@ package models
 import (
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
+)
+
+type TourStatus string
+
+const (
+	StatusDraft     TourStatus = "draft"
+	StatusPublished TourStatus = "published"
+	StatusArchived  TourStatus = "archived"
 )
 
 type Tour struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Price       float64   `json:"price"`
-	Duration    int       `json:"duration"` // in days
-	MaxGuests   int       `json:"max_guests"`
-	AuthorID    int       `json:"author_id"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID            int        `json:"id"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description"`
+	Difficulty    int        `json:"difficulty"` // 1-3 (easy, medium, hard)
+	Tags          []string   `json:"tags"`
+	Price         float64    `json:"price"`
+	Status        TourStatus `json:"status"`
+	TotalLengthKm float64    `json:"total_length_km"`
+	AuthorID      int        `json:"author_id"`
+	PublishedAt   *time.Time `json:"published_at"`
+	ArchivedAt    *time.Time `json:"archived_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 type CreateTourRequest struct {
-	Name        string  `json:"name" binding:"required"`
-	Description string  `json:"description" binding:"required"`
-	Price       float64 `json:"price" binding:"required"`
-	Duration    int     `json:"duration" binding:"required"`
-	MaxGuests   int     `json:"max_guests" binding:"required"`
+	Name        string   `json:"name" binding:"required"`
+	Description string   `json:"description" binding:"required"`
+	Difficulty  int      `json:"difficulty" binding:"required,min=1,max=3"`
+	Tags        []string `json:"tags" binding:"required"`
 }
 
 type UpdateTourRequest struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price"`
-	Duration    int     `json:"duration"`
-	MaxGuests   int     `json:"max_guests"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Difficulty  int      `json:"difficulty"`
+	Tags        []string `json:"tags"`
+	Price       float64  `json:"price"`
+	Status      string   `json:"status"`
 }
 
 func CreateToursTable(db *sql.DB) error {
@@ -39,10 +53,14 @@ func CreateToursTable(db *sql.DB) error {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
-        price DECIMAL(10,2) NOT NULL,
-        duration INTEGER NOT NULL,
-        max_guests INTEGER NOT NULL,
+        difficulty INTEGER NOT NULL CHECK (difficulty BETWEEN 1 AND 3),
+        tags TEXT[] NOT NULL DEFAULT '{}',
+        price DECIMAL(10,2) NOT NULL DEFAULT 0,
+        status VARCHAR(20) NOT NULL DEFAULT 'draft',
+        total_length_km DECIMAL(10,2) NOT NULL DEFAULT 0,
         author_id INTEGER NOT NULL,
+        published_at TIMESTAMP,
+        archived_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`
@@ -53,8 +71,11 @@ func CreateToursTable(db *sql.DB) error {
 
 func GetAllTours(db *sql.DB) ([]Tour, error) {
 	query := `
-    SELECT id, name, description, price, duration, max_guests, author_id, created_at, updated_at
-    FROM tours ORDER BY created_at DESC`
+    SELECT id, name, description, difficulty, tags, price, status, total_length_km, 
+           author_id, published_at, archived_at, created_at, updated_at
+    FROM tours 
+    WHERE status = 'published'
+    ORDER BY created_at DESC`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -66,8 +87,9 @@ func GetAllTours(db *sql.DB) ([]Tour, error) {
 	for rows.Next() {
 		var tour Tour
 		err := rows.Scan(
-			&tour.ID, &tour.Name, &tour.Description, &tour.Price,
-			&tour.Duration, &tour.MaxGuests, &tour.AuthorID,
+			&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+			pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+			&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
 			&tour.CreatedAt, &tour.UpdatedAt,
 		)
 		if err != nil {
@@ -81,13 +103,15 @@ func GetAllTours(db *sql.DB) ([]Tour, error) {
 
 func GetTourByID(db *sql.DB, id int) (*Tour, error) {
 	query := `
-    SELECT id, name, description, price, duration, max_guests, author_id, created_at, updated_at
+    SELECT id, name, description, difficulty, tags, price, status, total_length_km,
+           author_id, published_at, archived_at, created_at, updated_at
     FROM tours WHERE id = $1`
 
 	var tour Tour
 	err := db.QueryRow(query, id).Scan(
-		&tour.ID, &tour.Name, &tour.Description, &tour.Price,
-		&tour.Duration, &tour.MaxGuests, &tour.AuthorID,
+		&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+		pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+		&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
 		&tour.CreatedAt, &tour.UpdatedAt,
 	)
 
@@ -100,16 +124,18 @@ func GetTourByID(db *sql.DB, id int) (*Tour, error) {
 
 func CreateTour(db *sql.DB, req CreateTourRequest, authorID int) (*Tour, error) {
 	query := `
-    INSERT INTO tours (name, description, price, duration, max_guests, author_id)
-    VALUES ($1, $2, $3, $4, $5, $6)
-    RETURNING id, name, description, price, duration, max_guests, author_id, created_at, updated_at`
+    INSERT INTO tours (name, description, difficulty, tags, author_id, price, status)
+    VALUES ($1, $2, $3, $4, $5, 0, 'draft')
+    RETURNING id, name, description, difficulty, tags, price, status, total_length_km,
+              author_id, published_at, archived_at, created_at, updated_at`
 
 	var tour Tour
 	err := db.QueryRow(
-		query, req.Name, req.Description, req.Price, req.Duration, req.MaxGuests, authorID,
+		query, req.Name, req.Description, req.Difficulty, pq.Array(req.Tags), authorID,
 	).Scan(
-		&tour.ID, &tour.Name, &tour.Description, &tour.Price,
-		&tour.Duration, &tour.MaxGuests, &tour.AuthorID,
+		&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+		pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+		&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
 		&tour.CreatedAt, &tour.UpdatedAt,
 	)
 
@@ -123,16 +149,27 @@ func CreateTour(db *sql.DB, req CreateTourRequest, authorID int) (*Tour, error) 
 func UpdateTour(db *sql.DB, id int, req UpdateTourRequest, authorID int) (*Tour, error) {
 	query := `
     UPDATE tours 
-    SET name = $1, description = $2, price = $3, duration = $4, max_guests = $5, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $6 AND author_id = $7
-    RETURNING id, name, description, price, duration, max_guests, author_id, created_at, updated_at`
+    SET name = COALESCE(NULLIF($1, ''), name),
+        description = COALESCE(NULLIF($2, ''), description),
+        difficulty = CASE WHEN $3 > 0 THEN $3 ELSE difficulty END,
+        tags = CASE WHEN $4::text[] IS NOT NULL THEN $4 ELSE tags END,
+        price = CASE WHEN $5 >= 0 THEN $5 ELSE price END,
+        status = CASE WHEN $6 != '' THEN $6::VARCHAR ELSE status END,
+        published_at = CASE WHEN $6 = 'published' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END,
+        archived_at = CASE WHEN $6 = 'archived' AND archived_at IS NULL THEN CURRENT_TIMESTAMP ELSE archived_at END,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = $7 AND author_id = $8
+    RETURNING id, name, description, difficulty, tags, price, status, total_length_km,
+              author_id, published_at, archived_at, created_at, updated_at`
 
 	var tour Tour
 	err := db.QueryRow(
-		query, req.Name, req.Description, req.Price, req.Duration, req.MaxGuests, id, authorID,
+		query, req.Name, req.Description, req.Difficulty, pq.Array(req.Tags),
+		req.Price, req.Status, id, authorID,
 	).Scan(
-		&tour.ID, &tour.Name, &tour.Description, &tour.Price,
-		&tour.Duration, &tour.MaxGuests, &tour.AuthorID,
+		&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+		pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+		&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
 		&tour.CreatedAt, &tour.UpdatedAt,
 	)
 
@@ -160,4 +197,153 @@ func DeleteTour(db *sql.DB, id int, authorID int) error {
 	}
 
 	return nil
+}
+
+func GetToursByAuthor(db *sql.DB, authorID int) ([]Tour, error) {
+	query := `
+    SELECT id, name, description, difficulty, tags, price, status, total_length_km,
+           author_id, published_at, archived_at, created_at, updated_at
+    FROM tours WHERE author_id = $1 ORDER BY created_at DESC`
+
+	rows, err := db.Query(query, authorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tours []Tour
+	for rows.Next() {
+		var tour Tour
+		err := rows.Scan(
+			&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+			pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+			&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
+			&tour.CreatedAt, &tour.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tours = append(tours, tour)
+	}
+
+	return tours, nil
+}
+
+func CanPublishTour(db *sql.DB, tourID int) (bool, string, error) {
+	// Check if tour has at least 2 key points
+	keyPoints, err := GetKeyPointsByTourID(db, tourID)
+	if err != nil {
+		return false, "", err
+	}
+
+	if len(keyPoints) < 2 {
+		return false, "Tour must have at least 2 key points", nil
+	}
+
+	// Check if tour has at least one travel time
+	travelTimes, err := GetTravelTimesByTourID(db, tourID)
+	if err != nil {
+		return false, "", err
+	}
+
+	if len(travelTimes) == 0 {
+		return false, "Tour must have at least one travel time defined", nil
+	}
+
+	return true, "", nil
+}
+
+func PublishTour(db *sql.DB, tourID int, authorID int) (*Tour, error) {
+	// First validate
+	canPublish, _, err := CanPublishTour(db, tourID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !canPublish {
+		return nil, sql.ErrNoRows // Will be handled with custom error message
+	}
+
+	query := `
+    UPDATE tours 
+    SET status = 'published', 
+        published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+        archived_at = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1 AND author_id = $2
+    RETURNING id, name, description, difficulty, tags, price, status, total_length_km,
+              author_id, published_at, archived_at, created_at, updated_at`
+
+	var tour Tour
+	err = db.QueryRow(query, tourID, authorID).Scan(
+		&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+		pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+		&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
+		&tour.CreatedAt, &tour.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &tour, nil
+}
+
+func ArchiveTour(db *sql.DB, tourID int, authorID int) (*Tour, error) {
+	query := `
+    UPDATE tours 
+    SET status = 'archived',
+        archived_at = COALESCE(archived_at, CURRENT_TIMESTAMP),
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1 AND author_id = $2 AND status = 'published'
+    RETURNING id, name, description, difficulty, tags, price, status, total_length_km,
+              author_id, published_at, archived_at, created_at, updated_at`
+
+	var tour Tour
+	err := db.QueryRow(query, tourID, authorID).Scan(
+		&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+		pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+		&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
+		&tour.CreatedAt, &tour.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &tour, nil
+}
+
+func GetPublishedAndArchivedTours(db *sql.DB) ([]Tour, error) {
+	query := `
+    SELECT id, name, description, difficulty, tags, price, status, total_length_km, 
+           author_id, published_at, archived_at, created_at, updated_at
+    FROM tours 
+    WHERE status IN ('published', 'archived')
+    ORDER BY 
+        CASE WHEN status = 'published' THEN 0 ELSE 1 END,
+        created_at DESC`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tours []Tour
+	for rows.Next() {
+		var tour Tour
+		err := rows.Scan(
+			&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
+			pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
+			&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
+			&tour.CreatedAt, &tour.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tours = append(tours, tour)
+	}
+
+	return tours, nil
 }

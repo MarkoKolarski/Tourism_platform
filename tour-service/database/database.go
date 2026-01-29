@@ -26,6 +26,26 @@ func InitDB(cfg *config.Config) *sql.DB {
 		log.Fatal("Failed to create tours table:", err)
 	}
 
+	if err := models.CreateKeyPointsTable(db); err != nil {
+		log.Fatal("Failed to create key_points table:", err)
+	}
+
+	if err := models.CreateReviewsTable(db); err != nil {
+		log.Fatal("Failed to create reviews table:", err)
+	}
+
+	if err := models.CreateTravelTimesTable(db); err != nil {
+		log.Fatal("Failed to create travel_times table:", err)
+	}
+
+	if err := models.CreateTourExecutionsTable(db); err != nil {
+		log.Fatal("Failed to create tour_executions table:", err)
+	}
+
+	if err := models.CreateCompletedKeyPointsTable(db); err != nil {
+		log.Fatal("Failed to create completed_key_points table:", err)
+	}
+
 	log.Println("Database connected successfully")
 	return db
 }
