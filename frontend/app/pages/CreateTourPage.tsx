@@ -16,7 +16,7 @@ export default function CreateTourPage() {
   });
 
   // Redirect if not VODIC
-  if (user?.role !== "VODIC") {
+  if (user?.role.toUpperCase() !== "VODIC") {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

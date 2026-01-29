@@ -19,6 +19,8 @@ interface Tour {
 
 export default function ToursPage() {
   const { isAuthenticated, user } = useAuth();
+  // Add this for debugging:
+  console.log("user", user);
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +107,7 @@ export default function ToursPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Dostupne ture 🗺️
             </h1>
-            {isAuthenticated && user?.role === "VODIC" && (
+            {isAuthenticated && user?.role.toUpperCase() === "VODIC" && (
               <div className="flex gap-2">
                 <Link
                   to="/my-tours"

@@ -148,7 +148,7 @@ export default function TourDetailPage() {
   }
 
   const isOwner = user && tour.author_id === user.id;
-  const canEdit = user?.role === "VODIC" && isOwner;
+  const canEdit = user?.role.toUpperCase() === "VODIC" && isOwner;
 
   return (
     <Layout>
