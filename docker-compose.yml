@@ -147,7 +147,7 @@ services:
       - DB_NAME=tourism_tour
       - DB_USER=postgres
       - DB_PASSWORD=ftn
-      - SECRET_KEY=dev-secret-key
+      - JWT_SECRET=dev-secret-key
     depends_on:
       postgres:
         condition: service_healthy
