@@ -34,7 +34,7 @@ export interface Tour {
 }
 
 export default function ToursPage() {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,9 +108,27 @@ export default function ToursPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Dostupne ture 🗺️
-          </h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Dostupne ture 🗺️
+            </h1>
+            {isAuthenticated && user?.role === "VODIC" && (
+              <div className="flex gap-2">
+                <Link
+                  to="/my-tours"
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Moje ture
+                </Link>
+                <Link
+                  to="/tours/create"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  + Kreiraj turu
+                </Link>
+              </div>
+            )}
+          </div>
           <p className="text-gray-600 dark:text-gray-400">
             Otkrijte najbolje turističke ture u regionu
           </p>

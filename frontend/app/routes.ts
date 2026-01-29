@@ -13,4 +13,8 @@ export default [
   route("blogs/:id", "pages/BlogDetailPage.tsx"),
   route("my-blogs", "pages/MyBlogsPage.tsx"),
   route("tours", "pages/ToursPage.tsx"),
+  route("tours/create", "pages/CreateTourPage.tsx"),
+  route("my-tours", "pages/MyToursPage.tsx"),
+  route("tours/edit/:id", "pages/EditTourPage.tsx"),
+  route("tours/:id", "pages/TourDetailPage.tsx"),
 ] satisfies RouteConfig;
