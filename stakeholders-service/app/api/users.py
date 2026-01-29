@@ -172,9 +172,14 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Kreiraj JWT token
+    # Kreiraj JWT token sa role u payload-u
     access_token = create_access_token(
-        data={"sub": user.id, "username": user.username},
+        data={
+            "sub": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role.value.upper() if hasattr(user.role, 'value') else str(user.role).upper()
+        },
         expires_delta=timedelta(weeks=520)  # Token traje 10 godina
     )
     
@@ -210,9 +215,14 @@ async def register_user(
     # Registruje korisnika
     new_user = user_service.create_user(user_data)
     
-    # Kreiraj JWT token - automatski login nakon registracije
+    # Kreiraj JWT token sa role u payload-u - automatski login nakon registracije
     access_token = create_access_token(
-        data={"sub": new_user.id, "username": new_user.username},
+        data={
+            "sub": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "role": new_user.role.value.upper() if hasattr(new_user.role, 'value') else str(new_user.role).upper()
+        },
         expires_delta=timedelta(weeks=520)  # Token traje 10 godina
     )
     
