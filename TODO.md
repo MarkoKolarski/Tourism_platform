@@ -4,7 +4,6 @@
 - 8.
 - 10.
 - 15.
-- 17.
 
 # TODO:
 
@@ -23,6 +22,8 @@
     - delete travel_time
 
 - 12. tourist can make a review for a tour (rating: 1-5, comment, user info, tour attendance date, review date)
+
+- 17.
 
 # RPC
 - make tour-service handle auth with stakeholder-service with RPC
