@@ -17,4 +17,5 @@ export default [
   route("my-tours", "pages/MyToursPage.tsx"),
   route("tours/edit/:id", "pages/EditTourPage.tsx"),
   route("tours/:id", "pages/TourDetailPage.tsx"),
+  route("*", "pages/NotFoundPage.tsx"), // Catch-all for 404
 ] satisfies RouteConfig;
