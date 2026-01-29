@@ -186,6 +186,12 @@ export default function TourDetailPage() {
             {canEdit && (
               <>
                 <Link
+                  to={`/tours/manage/${tour.id}`}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  ⚙️ Upravljaj
+                </Link>
+                <Link
                   to={`/tours/edit/${tour.id}`}
                   className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
                 >

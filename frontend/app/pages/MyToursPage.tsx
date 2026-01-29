@@ -174,10 +174,10 @@ export default function MyToursPage() {
                     </h3>
                     <div className="flex gap-2">
                       <Link
-                        to={`/tours/edit/${tour.id}`}
-                        className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors"
+                        to={`/tours/manage/${tour.id}`}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                       >
-                        ✏️ Uredi
+                        Upravljaj →
                       </Link>
                       <button
                         onClick={() => handleDelete(tour.id)}
