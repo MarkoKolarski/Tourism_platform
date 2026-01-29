@@ -57,9 +57,7 @@ export default function TouristTourPage() {
     }
   };
 
-  // Funkcija za filtriranje tura
   const filteredTours = tours.filter(tour => {
-    // Filtriranje po pretrazi
     const matchesSearch = searchTerm === "" || 
       tour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tour.description.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -12,8 +12,9 @@ export default function CreateTourPage() {
     name: "",
     description: "",
     difficulty: 1,
-    tags: ""
+    tags: []
   });
+  const [currentTag, setCurrentTag] = useState("");
 
   // Redirect if not VODIC
   if (user?.role.toUpperCase() !== "VODIC") {
@@ -40,8 +41,6 @@ export default function CreateTourPage() {
     setLoading(true);
 
     try {
-      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-      
       const response = await fetch("/api/v1/tours", {
         method: "POST",
         headers: {
@@ -52,7 +51,7 @@ export default function CreateTourPage() {
           name: formData.name,
           description: formData.description,
           difficulty: parseInt(formData.difficulty.toString()),
-          tags: tagsArray
+          tags: formData.tags
         })
       });
 
@@ -69,6 +68,31 @@ export default function CreateTourPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddTag = () => {
+    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, currentTag.trim()]
+      });
+      setCurrentTag("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'difficulty' ? parseInt(value) : value
+    }));
   };
 
   return (
@@ -94,9 +118,10 @@ export default function CreateTourPage() {
             </label>
             <input
               type="text"
+              name="name"
               required
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="Npr. Obilazak Beograda"
             />
@@ -107,10 +132,11 @@ export default function CreateTourPage() {
               Opis *
             </label>
             <textarea
+              name="description"
               required
               rows={6}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="Detaljno opišite turu..."
             />
@@ -121,31 +147,72 @@ export default function CreateTourPage() {
               Težina *
             </label>
             <select
+              name="difficulty"
               required
               value={formData.difficulty}
-              onChange={(e) => setFormData({ ...formData, difficulty: parseInt(e.target.value) })}
+              onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             >
-              <option value={1}>Lako - Za sve uzraste</option>
-              <option value={2}>Srednje - Zahteva umeren nivo kondicije</option>
-              <option value={3}>Teško - Za iskusne</option>
+              <option value={1}>★☆☆☆☆ Lako</option>
+              <option value={2}>★★☆☆☆ Umereno</option>
+              <option value={3}>★★★☆☆ Srednje</option>
+              <option value={4}>★★★★☆ Teško</option>
+              <option value={5}>★★★★★ Vrlo teško</option>
             </select>
           </div>
+
+          {/* Tagovi - deo koji je dodat */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tagovi *
+              Tagovi
             </label>
-            <input
-              type="text"
-              required
-              value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="kultura, priroda, istorija (odvojeno zarezom)"
-            />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Unesite tagove odvojene zarezom
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={currentTag}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                placeholder="Unesite tag..."
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Dodaj
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Unesite tagove jedan po jedan klikom na Dodaj
             </p>
+
+            {/* Prikaz dodath tagova */}
+            {formData.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full"
+                  >
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4">
