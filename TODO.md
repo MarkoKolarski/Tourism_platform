@@ -3,6 +3,7 @@
 - 7.
 - 8.
 - 10.
+- 11.
 - 15.
 
 # TOFIX:
@@ -11,7 +12,6 @@
     - check out: purchase-service/app/api/purchase.py:def add_to_cart
 
 # TODO:
-- 11.
 - 13. 
     - frontend:
         - select keypoints on map
