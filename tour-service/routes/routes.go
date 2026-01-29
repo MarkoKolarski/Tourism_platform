@@ -780,7 +780,7 @@ func getToursByStatus(db *sql.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status value"})
 			return
 		}
-
+		
 		tours, err := models.GetToursByStatus(db, status)
 		if err != nil {
 			log.Printf("[getToursByStatus] Error fetching tours: %v", err)

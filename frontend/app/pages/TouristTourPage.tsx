@@ -40,7 +40,7 @@ export default function TouristTourPage() {
 
   const fetchTours = async () => {
     try {
-      setLoading(true);
+      setLoading(true);      
       const response = await fetch("/api/v1/tours/for-tourists");
       
       if (!response.ok) {
@@ -300,9 +300,9 @@ export default function TouristTourPage() {
 
                   {/* Autor i dugme */}
                   <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                    <div className="text-sm text-gray-500">
+                   {/* <div className="text-sm text-gray-500">
                       Autor: {tour.author_name || `ID: ${tour.author_id}`}
-                    </div>
+                    </div>*/}
                     <Link
                       to={`/tour/${tour.id}`}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
