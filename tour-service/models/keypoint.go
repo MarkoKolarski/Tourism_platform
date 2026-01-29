@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"math"
 	"time"
 )
 
@@ -84,6 +85,7 @@ func GetKeyPointsByTourID(db *sql.DB, tourID int) ([]KeyPoint, error) {
 }
 
 func CreateKeyPoint(db *sql.DB, tourID int, req CreateKeyPointRequest) (*KeyPoint, error) {
+	// Insert key point
 	query := `
     INSERT INTO key_points (tour_id, name, description, latitude, longitude, image_url, "order")
     VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -97,12 +99,46 @@ func CreateKeyPoint(db *sql.DB, tourID int, req CreateKeyPointRequest) (*KeyPoin
 		&kp.Latitude, &kp.Longitude, &kp.ImageURL, &kp.Order,
 		&kp.CreatedAt, &kp.UpdatedAt,
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
+	// After adding, recalculate tour length if more than 1 key point
+	keyPoints, err := GetKeyPointsByTourID(db, tourID)
+	if err == nil && len(keyPoints) > 1 {
+		length := calculateTourLengthKm(keyPoints)
+		updateTourLength(db, tourID, length)
+	}
+
 	return &kp, nil
+}
+
+// Helper: Haversine formula for distance in km
+func haversine(lat1, lon1, lat2, lon2 float64) float64 {
+	const R = 6371 // Earth radius in km
+	dLat := (lat2 - lat1) * math.Pi / 180
+	dLon := (lon2 - lon1) * math.Pi / 180
+	lat1R := lat1 * math.Pi / 180
+	lat2R := lat2 * math.Pi / 180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Sin(dLon/2)*math.Sin(dLon/2)*math.Cos(lat1R)*math.Cos(lat2R)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return R * c
+}
+
+func calculateTourLengthKm(keyPoints []KeyPoint) float64 {
+	var total float64
+	for i := 1; i < len(keyPoints); i++ {
+		total += haversine(
+			keyPoints[i-1].Latitude, keyPoints[i-1].Longitude,
+			keyPoints[i].Latitude, keyPoints[i].Longitude,
+		)
+	}
+	return math.Round(total*100) / 100 // round to 2 decimals
+}
+
+func updateTourLength(db *sql.DB, tourID int, length float64) {
+	_, _ = db.Exec(`UPDATE tours SET total_length_km = $1 WHERE id = $2`, length, tourID)
 }
 
 func UpdateKeyPoint(db *sql.DB, id int, tourID int, req UpdateKeyPointRequest) (*KeyPoint, error) {

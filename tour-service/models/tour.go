@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/lib/pq"
@@ -48,8 +49,15 @@ type UpdateTourRequest struct {
 }
 
 func CreateToursTable(db *sql.DB) error {
+	// Drop and recreate to ensure schema is correct
+	dropQuery := `DROP TABLE IF EXISTS tours CASCADE`
+	_, err := db.Exec(dropQuery)
+	if err != nil {
+		return err
+	}
+
 	query := `
-    CREATE TABLE IF NOT EXISTS tours (
+    CREATE TABLE tours (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
@@ -65,6 +73,23 @@ func CreateToursTable(db *sql.DB) error {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`
 
+	_, err = db.Exec(query)
+	return err
+}
+
+func MigrateToursTable(db *sql.DB) error {
+	// Add updated_at column if it doesn't exist
+	query := `
+	DO $$ 
+	BEGIN
+		IF NOT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = 'tours' AND column_name = 'updated_at'
+		) THEN
+			ALTER TABLE tours ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+		END IF;
+	END $$;
+	`
 	_, err := db.Exec(query)
 	return err
 }
@@ -77,8 +102,10 @@ func GetAllTours(db *sql.DB) ([]Tour, error) {
     WHERE status = 'published'
     ORDER BY created_at DESC`
 
+	log.Println("GetAllTours: Executing query")
 	rows, err := db.Query(query)
 	if err != nil {
+		log.Printf("GetAllTours: Query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -93,11 +120,18 @@ func GetAllTours(db *sql.DB) ([]Tour, error) {
 			&tour.CreatedAt, &tour.UpdatedAt,
 		)
 		if err != nil {
+			log.Printf("GetAllTours: Row scan error: %v", err)
 			return nil, err
 		}
 		tours = append(tours, tour)
 	}
 
+	if err = rows.Err(); err != nil {
+		log.Printf("GetAllTours: Rows iteration error: %v", err)
+		return nil, err
+	}
+
+	log.Printf("GetAllTours: Successfully fetched %d tours", len(tours))
 	return tours, nil
 }
 
@@ -312,38 +346,4 @@ func ArchiveTour(db *sql.DB, tourID int, authorID int) (*Tour, error) {
 	}
 
 	return &tour, nil
-}
-
-func GetPublishedAndArchivedTours(db *sql.DB) ([]Tour, error) {
-	query := `
-    SELECT id, name, description, difficulty, tags, price, status, total_length_km, 
-           author_id, published_at, archived_at, created_at, updated_at
-    FROM tours 
-    WHERE status IN ('published', 'archived')
-    ORDER BY 
-        CASE WHEN status = 'published' THEN 0 ELSE 1 END,
-        created_at DESC`
-
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var tours []Tour
-	for rows.Next() {
-		var tour Tour
-		err := rows.Scan(
-			&tour.ID, &tour.Name, &tour.Description, &tour.Difficulty,
-			pq.Array(&tour.Tags), &tour.Price, &tour.Status, &tour.TotalLengthKm,
-			&tour.AuthorID, &tour.PublishedAt, &tour.ArchivedAt,
-			&tour.CreatedAt, &tour.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		tours = append(tours, tour)
-	}
-
-	return tours, nil
 }

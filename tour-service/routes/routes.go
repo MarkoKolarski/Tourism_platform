@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"strconv"
 	"tour-service/config"
@@ -54,12 +55,15 @@ func healthCheck(c *gin.Context) {
 
 func getTours(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Println("[getTours] Fetching all tours...")
 		tours, err := models.GetAllTours(db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tours"})
+			log.Printf("[getTours] Error fetching tours: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tours", "details": err.Error()})
 			return
 		}
 
+		log.Printf("[getTours] Successfully fetched %d tours", len(tours))
 		c.JSON(http.StatusOK, gin.H{"tours": tours})
 	}
 }
