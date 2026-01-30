@@ -1,5 +1,5 @@
 # Multi-stage build for Go service with gRPC
-FROM golang:1.23-alpine as builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 

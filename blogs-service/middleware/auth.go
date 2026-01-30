@@ -102,28 +102,33 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 			jwtSecret = "dev-secret-key"
 		}
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return []byte(jwtSecret), nil
 		})
 
 		if err == nil && token.Valid {
-			claims, ok := token.Claims.(jwt.MapClaims)
-			if ok {
-				if userID, ok := claims["sub"].(string); ok {
-					c.Set("userID", userID)
-				} else if userID, ok := claims["userId"].(string); ok {
-					c.Set("userID", userID)
+			if claims, ok := token.Claims.(*Claims); ok {
+				// Extract user ID - handle both int and string formats
+				var userIDStr string
+				switch v := claims.Sub.(type) {
+				case float64:
+					userIDStr = strconv.FormatInt(int64(v), 10)
+				case int:
+					userIDStr = strconv.Itoa(v)
+				case int64:
+					userIDStr = strconv.FormatInt(v, 10)
+				case string:
+					userIDStr = v
 				}
 
-				if userName, ok := claims["username"].(string); ok {
-					c.Set("userName", userName)
+				if userIDStr != "" {
+					c.Set("userID", userIDStr)
 				}
-
-				if role, ok := claims["role"].(string); ok {
-					c.Set("userRole", role)
+				if claims.Username != "" {
+					c.Set("userName", claims.Username)
 				}
 			}
 		}

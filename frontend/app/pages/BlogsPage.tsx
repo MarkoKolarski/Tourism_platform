@@ -49,10 +49,24 @@ export default function BlogsPage() {
         params.append("search", search.trim());
       }
 
-      const response = await fetch(`/api/blogs-service/blogs?${params}`);
+      const headers: HeadersInit = {};
+      if (isAuthenticated && token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/blogs-service/blogs?${params}`, {
+        headers,
+      });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 401) {
+          setError("You must be logged in to view blogs.");
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        setBlogs([]);
+        setTotalBlogs(0);
+        return;
       }
 
       const data: BlogsResponse = await response.json();
@@ -61,6 +75,8 @@ export default function BlogsPage() {
     } catch (err) {
       console.error("Error fetching blogs:", err);
       setError("Failed to load blogs. Please try again later.");
+      setBlogs([]);
+      setTotalBlogs(0);
     } finally {
       setLoading(false);
     }
@@ -68,7 +84,7 @@ export default function BlogsPage() {
 
   useEffect(() => {
     fetchBlogs(currentPage, searchTerm);
-  }, [currentPage]);
+  }, [currentPage, isAuthenticated]); // Add isAuthenticated to re-fetch on login/logout
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
