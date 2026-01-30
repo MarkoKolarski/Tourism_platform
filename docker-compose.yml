@@ -50,7 +50,6 @@ services:
     ports:
       - "8001:8001"
     environment:
-     # - DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_stakeholders
       - DATABASE_URL=postgresql://postgres:ftn@postgres:5432/tourism_stakeholders
       - SECRET_KEY=dev-secret-key
       - ALGORITHM=HS256
@@ -85,25 +84,22 @@ services:
       - tourism-network
     restart: unless-stopped
 
-  purchase-service:
+  purchases-service:
     build:
-      context: ./purchase-service
+      context: ./purchases-service
       dockerfile: Dockerfile
-    container_name: tourism-purchase-service
+    container_name: tourism-purchases-service
     ports:
       - "8003:8003"
     environment:
-      #- DATABASE_URL=postgresql://postgres:ftn@host.docker.internal:5432/tourism_purchase
       - DATABASE_URL=postgresql://postgres:ftn@postgres:5432/tourism_purchase
       - SECRET_KEY=dev-secret-key
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - STAKEHOLDERS_SERVICE_URL=http://gateway/api/v1
-      - FOLLOWERS_SERVICE_URL=http://gateway/api/v1
-      - PURCHASE_SERVICE_URL=http://gateway/api/v1
-      #- STAKEHOLDERS_SERVICE_URL=http://stakeholders-service:8001
-      #- FOLLOWERS_SERVICE_URL=http://followers-service:8002
-      #- TOURS_SERVICE_URL=http://tours-service:8004
+      - STAKEHOLDERS_SERVICE_URL=http://stakeholders-service:8001
+      - FOLLOWERS_SERVICE_URL=http://followers-service:8002
+      - BLOGS_SERVICE_URL=http://blogs-service:8004
+      - TOURS_SERVICE_URL=http://tours-service:8004
     networks:
       - tourism-network
     depends_on:
@@ -111,11 +107,11 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  blog-service:
+  blogs-service:
     build:
-      context: ./blog-service
+      context: ./blogs-service
       dockerfile: Dockerfile
-    container_name: tourism-blog-service
+    container_name: tourism-blogs-service
     ports:
       - "8004:8004"
     environment:
@@ -124,7 +120,7 @@ services:
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=ftn
-      - DB_NAME=tourism_blog
+      - DB_NAME=tourism_blogs
       - JWT_SECRET=dev-secret-key
     depends_on:
       postgres:
@@ -133,18 +129,18 @@ services:
       - tourism-network
     restart: unless-stopped
 
-  tour-service:
+  tours-service:
     build:
-      context: ./tour-service
+      context: ./tours-service
       dockerfile: Dockerfile
-    container_name: tourism-tour-service
+    container_name: tourism-tours-service
     ports:
       - "8005:8005"
     environment:
       - PORT=8005
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=tourism_tour
+      - DB_NAME=tourism_tours
       - DB_USER=postgres
       - DB_PASSWORD=ftn
       - JWT_SECRET=dev-secret-key
@@ -165,15 +161,12 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      # Updated to use gateway instead of direct service access
-      - STAKEHOLDERS_SERVICE_URL=http://localhost/api/v1
-      - FOLLOWERS_SERVICE_URL=http://localhost/api/v1
-      - PURCHASE_SERVICE_URL=http://localhost/api/v1
     depends_on:
       - stakeholders-service
       - followers-service
-      - purchase-service
-      - blog-service
+      - purchases-service
+      - blogs-service
+      - tours-service
     networks:
       - tourism-network
     restart: unless-stopped
@@ -188,9 +181,9 @@ services:
     depends_on:
       - stakeholders-service
       - followers-service
-      - purchase-service
-      - blog-service
-      - tour-service
+      - purchases-service
+      - blogs-service
+      - tours-service
       - frontend
     networks:
       - tourism-network

@@ -10,8 +10,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o blog-service .
+RUN go build -o blogs-service .
 
 EXPOSE 8004
 
-CMD ["./blog-service"]
+CMD ["./blogs-service"]

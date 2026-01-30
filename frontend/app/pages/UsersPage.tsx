@@ -34,7 +34,7 @@ export default function UsersPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<ProfileUpdateData>({});
 
-  const API_URL = "/api/v1/users";
+  const API_URL = "/api/stakeholders-service";
 
   // Redirect if not authenticated
   if (!isAuthenticated) {

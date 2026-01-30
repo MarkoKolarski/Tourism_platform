@@ -8,8 +8,8 @@
 
 # TOFIX:
 - fix 9. user must follow other user to see their blogs & add review
-- fix 16. fix purchasing/reserving tour tour-service needs to communicate with purcase-service (maybe use RPC?)
-    - check out: purchase-service/app/api/purchase.py:def add_to_cart
+- fix 16. fix purchasing/reserving tour tours-service needs to communicate with purcase-service (maybe use RPC?)
+    - check out: purchases-service/app/api/purchase.py:def add_to_cart
 
 # TODO:
 - 13. 
@@ -23,7 +23,7 @@
 - 17. finish frontend for TourExecution (backend is done?)
 
 # RPC
-- make tour-service handle auth with stakeholder-service with RPC
-- make blog-service handle auth with stakeholder-service with RPC
+- make tours-service handle auth with stakeholders-service with RPC
+- make blogs-service handle auth with stakeholders-service with RPC
   - currenly we get the JWT token that encodes user id, role, etc
 

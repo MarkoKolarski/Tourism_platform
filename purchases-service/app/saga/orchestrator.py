@@ -198,7 +198,7 @@ class SagaOrchestrator:
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(
-                    f"{settings.stakeholders_service_url}/api/users/{user_id}"
+                    f"{settings.stakeholders_service_url}/users/{user_id}"
                 )
                 
                 if response.status_code == 200:
@@ -221,9 +221,10 @@ class SagaOrchestrator:
         try:
             # Simulacija poziva Tours servisa
             # U produkciji bi ovde bio stvarni API poziv
+            # TODO: fix tours reserve
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.post(
-                    f"{settings.tours_service_url}/api/tours/reserve",
+                    f"{settings.tours_service_url}/tours/reserve",
                     json={
                         "tour_ids": tour_ids,
                         "user_id": user_id

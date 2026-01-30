@@ -5,31 +5,29 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"tour-service/config"
-	"tour-service/middleware"
-	"tour-service/models"
+	"tours-service/config"
+	"tours-service/middleware"
+	"tours-service/models"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
-	api := r.Group("/api/v1")
+	root := r.Group("/")
 
 	// Public routes
-	api.GET("/health", healthCheck)
-	api.GET("/tours", getTours(db))
-	api.GET("/tours/:id", getTour(db))
-	api.GET("/tours/:id/keypoints", getKeyPoints(db))
-	api.GET("/tours/:id/keypoints/first", getFirstKeyPoint(db))
-	api.GET("/tours/:id/reviews", getReviews(db))
-	api.GET("/tours/:id/travel-times", getTravelTimes(db))
-	api.GET("/tours/for-tourists", getToursForTourists(db))
-	api.GET("/tours/status/:status", getToursByStatus(db))
-
-
+	root.GET("/health", healthCheck)
+	root.GET("/tours", getTours(db))
+	root.GET("/tours/:id", getTour(db))
+	root.GET("/tours/:id/keypoints", getKeyPoints(db))
+	root.GET("/tours/:id/keypoints/first", getFirstKeyPoint(db))
+	root.GET("/tours/:id/reviews", getReviews(db))
+	root.GET("/tours/:id/travel-times", getTravelTimes(db))
+	root.GET("/tours/for-tourists", getToursForTourists(db))
+	root.GET("/tours/status/:status", getToursByStatus(db))
 
 	// Protected routes - require authentication
-	protected := api.Use(middleware.NewAuthMiddleware(cfg, db))
+	protected := root.Use(middleware.NewAuthMiddleware(cfg, db))
 
 	// Tourist routes
 	protected.POST("/tours/:id/reviews", createReview(db))
@@ -54,7 +52,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 }
 
 func healthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "tour-service"})
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "tours-service"})
 }
 
 func getTours(db *sql.DB) gin.HandlerFunc {
@@ -750,7 +748,7 @@ func createReview(db *sql.DB) gin.HandlerFunc {
 func getToursForTourists(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("[getToursForTourists] Fetching tours for tourists...")
-		
+
 		toursData, err := models.GetToursForTourists(db)
 		if err != nil {
 			log.Printf("[getToursForTourists] Error fetching tours: %v", err)
@@ -768,19 +766,19 @@ func getToursByStatus(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		status := c.Param("status")
 		log.Printf("[getToursByStatus] Fetching tours with status: %s", status)
-		
+
 		// Validacija statusa
 		validStatuses := map[string]bool{
 			"draft":     true,
 			"published": true,
 			"archived":  true,
 		}
-		
+
 		if !validStatuses[status] {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status value"})
 			return
 		}
-		
+
 		tours, err := models.GetToursByStatus(db, status)
 		if err != nil {
 			log.Printf("[getToursByStatus] Error fetching tours: %v", err)
@@ -789,7 +787,7 @@ func getToursByStatus(db *sql.DB) gin.HandlerFunc {
 		}
 
 		log.Printf("[getToursByStatus] Successfully fetched %d tours with status %s", len(tours), status)
-		
+
 		// Konvertuj u odgovor koji odgovara Python verziji
 		toursData := make([]gin.H, len(tours))
 		for i, t := range tours {

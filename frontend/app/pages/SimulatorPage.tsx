@@ -42,7 +42,7 @@ export default function SimulatorPage() {
     const fetchCurrentLocation = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/v1/locations/current/${user.id}`, {
+        const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
           credentials: "include",
         });
         
@@ -68,7 +68,7 @@ export default function SimulatorPage() {
 
     try {
       setUpdating(true);
-      const response = await fetch(`/api/v1/locations/current/${user.id}`, {
+      const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -113,7 +113,7 @@ export default function SimulatorPage() {
 
     try {
       setUpdating(true);
-      const response = await fetch(`/api/v1/locations/current/${user.id}`, {
+      const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
         method: "DELETE",
         credentials: "include",
       });

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"blog-service/models"
+	"blogs-service/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"blog-service/handlers"
-	"blog-service/middleware"
+	"blogs-service/handlers"
+	"blogs-service/middleware"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -12,8 +12,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "Blog service is running",
-			"service": "blog-service",
+			"message": "Blogs service is running",
+			"service": "blogs-service",
 		})
 	})
 
@@ -22,17 +22,17 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	commentHandler := handlers.NewCommentHandler(db)
 
 	// Public routes (no authentication required)
-	api := router.Group("/api")
+	root := router.Group("/")
 	{
 		// Blog routes - public read access
-		api.GET("/blogs", blogHandler.GetAllBlogs)
-		api.GET("/blogs/:id", blogHandler.GetBlogByID)
-		api.GET("/blogs/:id/likes/count", blogHandler.GetLikeCount)
-		api.GET("/blogs/:id/comments", commentHandler.GetCommentsByBlogID)
+		root.GET("/blogs", blogHandler.GetAllBlogs)
+		root.GET("/blogs/:id", blogHandler.GetBlogByID)
+		root.GET("/blogs/:id/likes/count", blogHandler.GetLikeCount)
+		root.GET("/blogs/:id/comments", commentHandler.GetCommentsByBlogID)
 	}
 
 	// Protected routes (authentication required)
-	protected := api.Group("/")
+	protected := root.Group("/")
 	protected.Use(middleware.AuthMiddleware())
 	{
 		// User's own blogs

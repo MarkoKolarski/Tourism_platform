@@ -56,7 +56,7 @@ export default function MyBlogsPage() {
         params.append("search", search.trim());
       }
 
-      const response = await fetch(`http://localhost:8004/api/blogs/user?${params}`, {
+      const response = await fetch(`/api/blogs-service/blogs/user?${params}`, {
         method: "GET",    
         headers: {
                 Authorization: `Bearer ${token}`,
@@ -96,7 +96,7 @@ export default function MyBlogsPage() {
     if (!confirm("Are you sure you want to delete this blog?")) return;
 
     try {
-      const response = await fetch(`http://localhost:8004/api/blogs/${blogId}`, {
+      const response = await fetch(`/api/blogs-service/blogs/${blogId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

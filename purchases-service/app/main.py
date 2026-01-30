@@ -76,7 +76,6 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Provera zdravlja servisa"""
-    # TODO: Proveri konekciju sa bazom
     return {
         "status": "healthy",
         "service": "purchase",

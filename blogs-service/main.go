@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"blog-service/database"
-	"blog-service/routes"
+	"blogs-service/database"
+	"blogs-service/routes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

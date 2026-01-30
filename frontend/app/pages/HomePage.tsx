@@ -20,7 +20,7 @@ export default function HomePage() {
       ]
     },
     {
-      name: "Blog Service",
+      name: "Blogs Service",
       description: "Putni blogovi, komentari i interakcije",
       icon: "📖",
       color: "bg-orange-500",
@@ -46,7 +46,7 @@ export default function HomePage() {
       ]
     },
     {
-      name: "Tour Service",
+      name: "Tours Service",
       description: "Kreiranje, upravljanje i pregled turističkih tura",
       icon: "🗺️",
       color: "bg-yellow-500",
@@ -59,7 +59,7 @@ export default function HomePage() {
       ]
     },
     {
-      name: "Purchase Service",
+      name: "Purchases Service",
       description: "Kupovina tura, SAGA pattern i transakcije",
       icon: "🛒",
       color: "bg-purple-500",
@@ -258,15 +258,15 @@ export default function HomePage() {
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-purple-600 mb-2">8003</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Purchase Port</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Purchases Port</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-orange-600 mb-2">8004</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Blog Port</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Blogs Port</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-yellow-600 mb-2">8005</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Tour Port</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Tours Port</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-indigo-600 mb-2">100%</div>

@@ -48,7 +48,7 @@ async def shutdown_event():
 
 app.include_router(
     followers_router, 
-    prefix=f"{settings.api_prefix}/followers", 
+    prefix=f"{settings.api_prefix}", 
     tags=["followers"]
 )
 

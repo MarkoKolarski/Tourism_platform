@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"blog-service/models"
-	"blog-service/repository"
+	"blogs-service/models"
+	"blogs-service/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"blog-service/models"
+	"blogs-service/models"
 	"fmt"
 	"log"
 	"os"
