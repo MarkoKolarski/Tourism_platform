@@ -23,7 +23,7 @@
 - 17. finish frontend for TourExecution (backend is done?)
 
 # RPC
-- make tours-service handle auth with stakeholders-service with RPC
-- make blogs-service handle auth with stakeholders-service with RPC
+- make tours-service handle auth with stakeholders-service with RPC?
+- make blogs-service handle auth with stakeholders-service with RPC?
   - currenly we get the JWT token that encodes user id, role, etc
 
