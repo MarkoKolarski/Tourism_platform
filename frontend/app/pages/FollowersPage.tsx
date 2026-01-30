@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
 interface FollowStats {
   user_id: number;
@@ -398,12 +398,13 @@ export default function FollowersPage() {
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
-                                <button
+                                <Link
+                                  to={`/blogs`}
                                   className="btn btn-primary btn-sm"
-                                  title="Pogledaj blog korisnika (dostupno uskoro)"
+                                  title="Pogledaj blog korisnika"
                                 >
                                   📝 Blog
-                                </button>
+                                </Link>
                                 <button
                                   onClick={() => handleUnfollow(user.user_id)}
                                   disabled={followingInProgress === user.user_id}
