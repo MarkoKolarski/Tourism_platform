@@ -43,7 +43,7 @@ interface SagaTransaction {
 }
 
 export default function PurchasePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [cart, setCart] = useState<ShoppingCart | null>(null);
   const [tokens, setTokens] = useState<PurchaseToken[]>([]);
@@ -80,12 +80,15 @@ export default function PurchasePage() {
   };
 
   // Redirect if not authenticated
-  if (!isAuthenticated) {
-    navigate("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   const fetchCart = async () => {
+    if (!user?.token) return;
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/cart`, {
@@ -222,10 +225,20 @@ export default function PurchasePage() {
 
   // Automatski učitaj cart kada se komponenta mountuje
   useEffect(() => {
-    if (activeTab === "cart") {
+    if (isAuthenticated && activeTab === "cart") {
       fetchCart();
     }
-  }, []);
+  }, [isAuthenticated, activeTab]);
+
+  if (isLoading || !user) {
+    return (
+        <Layout>
+            <div className="text-center py-12">
+                <div className="spinner mx-auto"></div>
+            </div>
+        </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -20,7 +20,7 @@ interface SimulatorData {
 }
 
 export default function SimulatorPage() {
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [simulatorData, setSimulatorData] = useState<SimulatorData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,15 +29,15 @@ export default function SimulatorPage() {
 
   // Redirect ako nije ulogovan
   useEffect(() => {
-    if (!user) {
+    if (isLoading) return;
+    if (!isAuthenticated) {
       navigate("/login", { replace: true });
-      return;
     }
-  }, [user, navigate]);
+  }, [user, navigate, isLoading, isAuthenticated]);
 
   // Učitaj trenutnu lokaciju korisnika
   useEffect(() => {
-    if (!user) return;
+    if (isLoading || !user) return;
 
     const fetchCurrentLocation = async () => {
       try {
@@ -61,7 +61,7 @@ export default function SimulatorPage() {
     };
 
     fetchCurrentLocation();
-  }, [user]);
+  }, [user, isLoading]);
 
   const handleMapClick = async (lat: number, lng: number) => {
     if (!user || updating) return;
@@ -138,8 +138,14 @@ export default function SimulatorPage() {
     }
   };
 
-  if (!user) {
-    return null; // Component is redirecting
+  if (isLoading || !user) {
+    return (
+        <Layout>
+            <div className="text-center py-12">
+                <div className="spinner mx-auto"></div>
+            </div>
+        </Layout>
+    );
   }
 
   return (

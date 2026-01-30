@@ -34,7 +34,7 @@ export default function EditTourPage() {
   });
 
   // Redirect if not VODIC
-  if (user?.role && user.role.toLowerCase() !== "vodic") {
+  if (user?.role?.toLowerCase() !== "vodic") {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
