@@ -54,7 +54,7 @@ app.add_middleware(
 # Uključivanje router-a
 app.include_router(
     purchase_router, 
-    prefix=f"{settings.api_prefix}/purchase", 
+    prefix=f"{settings.api_prefix}", 
     tags=["purchase"]
 )
 
