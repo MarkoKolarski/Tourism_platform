@@ -18,5 +18,5 @@ export default [
   route("tours/manage/:id", "pages/ManageTourPage.tsx"),
   route("tours/edit/:id", "pages/EditTourPage.tsx"),
   route("tours/:id", "pages/TourDetailPage.tsx"),
-  route("tourist-tours/", "pages/TouristTourPage.tsx"),
+  route("tourist-tours", "pages/TouristTourPage.tsx"),
 ] satisfies RouteConfig;
