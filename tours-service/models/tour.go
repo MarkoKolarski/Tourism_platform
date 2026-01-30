@@ -49,15 +49,9 @@ type UpdateTourRequest struct {
 }
 
 func CreateToursTable(db *sql.DB) error {
-	// Drop and recreate to ensure schema is correct
-	dropQuery := `DROP TABLE IF EXISTS tours CASCADE`
-	_, err := db.Exec(dropQuery)
-	if err != nil {
-		return err
-	}
-
+	// Create table if it doesn't exist - don't drop existing data
 	query := `
-    CREATE TABLE tours (
+    CREATE TABLE IF NOT EXISTS tours (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
@@ -73,7 +67,7 @@ func CreateToursTable(db *sql.DB) error {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`
 
-	_, err = db.Exec(query)
+	_, err := db.Exec(query)
 	return err
 }
 
@@ -387,16 +381,16 @@ func GetToursForTourists(db *sql.DB) ([]map[string]interface{}, error) {
 		}
 
 		tourData := map[string]interface{}{
-			"id":          tour.ID,
-			"name":        tour.Name,
-			"description": tour.Description,
-			"difficulty":  tour.Difficulty,
-			"tags":        tour.Tags,
-			"status":      tour.Status,
-			"price":       tour.Price,
+			"id":              tour.ID,
+			"name":            tour.Name,
+			"description":     tour.Description,
+			"difficulty":      tour.Difficulty,
+			"tags":            tour.Tags,
+			"status":          tour.Status,
+			"price":           tour.Price,
 			"total_length_km": tour.TotalLengthKm,
-			"created_at":  tour.CreatedAt.Format(time.RFC3339),
-			"first_keypoint": firstKeypoint,
+			"created_at":      tour.CreatedAt.Format(time.RFC3339),
+			"first_keypoint":  firstKeypoint,
 		}
 
 		toursData = append(toursData, tourData)

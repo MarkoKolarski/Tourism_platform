@@ -54,7 +54,7 @@ export default function HomePage() {
       features: [
         "Kreiranje tura (draft/published/archived)",
         "Mapa i ključne tačke",
-        "Računanje dužine ture",
+        "Recenzije i ocene",
         "Različita vremena obilaska"
       ]
     },
@@ -71,7 +71,19 @@ export default function HomePage() {
         "Purchase tokeni"
       ]
     },
-
+    {
+      name: "Position Simulator",
+      description: "Simulacija GPS pozicije za testiranje",
+      icon: "📍",
+      color: "bg-red-500",
+      link: "/simulator",
+      features: [
+        "Simulacija GPS lokacije",
+        "Interaktivna mapa",
+        "Real-time ažuriranje",
+        "Testiranje tura"
+      ]
+    },
   ];
 
   return (

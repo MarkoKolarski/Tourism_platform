@@ -47,6 +47,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	vodic.PUT("/tours/:id/keypoints/:kpid", updateKeyPoint(db))
 	vodic.DELETE("/tours/:id/keypoints/:kpid", deleteKeyPoint(db))
 	vodic.POST("/tours/:id/travel-times", createTravelTime(db))
+	vodic.DELETE("/tours/:id/travel-times/:ttid", deleteTravelTime(db))
 	vodic.POST("/tours/:id/publish", publishTour(db))
 	vodic.POST("/tours/:id/archive", archiveTour(db))
 }
@@ -336,7 +337,24 @@ func getReviews(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"reviews": reviews})
+		// Enrich reviews with tourist information
+		enrichedReviews := make([]gin.H, len(reviews))
+		for i, review := range reviews {
+			// Fetch tourist info from stakeholders service (simplified - in production use proper HTTP client)
+			enrichedReviews[i] = gin.H{
+				"id":         review.ID,
+				"tour_id":    review.TourID,
+				"tourist_id": review.TouristID,
+				"rating":     review.Rating,
+				"comment":    review.Comment,
+				"visit_date": review.VisitDate,
+				"images":     review.Images,
+				"created_at": review.CreatedAt,
+				"updated_at": review.UpdatedAt,
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{"reviews": enrichedReviews})
 	}
 }
 
@@ -462,6 +480,49 @@ func createTravelTime(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+func deleteTravelTime(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tourID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tour ID"})
+			return
+		}
+		ttID, err := strconv.Atoi(c.Param("ttid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid travel time ID"})
+			return
+		}
+
+		// Verify tour ownership
+		userIDInterface, _ := c.Get("user_id")
+		var authorID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			authorID = int(v)
+		case string:
+			authorID, _ = strconv.Atoi(v)
+		}
+
+		tour, err := models.GetTourByID(db, tourID)
+		if err != nil || tour.AuthorID != authorID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized"})
+			return
+		}
+
+		err = models.DeleteTravelTime(db, ttID, tourID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Travel time not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete travel time"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Travel time deleted successfully"})
+	}
+}
+
 func updateKeyPoint(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tourID, _ := strconv.Atoi(c.Param("id"))
@@ -470,6 +531,22 @@ func updateKeyPoint(db *sql.DB) gin.HandlerFunc {
 		var req models.UpdateKeyPointRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Verify tour ownership
+		userIDInterface, _ := c.Get("user_id")
+		var authorID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			authorID = int(v)
+		case string:
+			authorID, _ = strconv.Atoi(v)
+		}
+
+		tour, err := models.GetTourByID(db, tourID)
+		if err != nil || tour.AuthorID != authorID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized"})
 			return
 		}
 
@@ -596,7 +673,7 @@ func getActiveTourExecution(db *sql.DB) gin.HandlerFunc {
 		execution, err := models.GetActiveTourExecution(db, touristID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "No active tour execution"})
+				c.JSON(http.StatusNoContent, gin.H{"error": "No active tour execution"})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch execution"})

@@ -2,28 +2,24 @@
 - 6.
 - 7.
 - 8.
+- 9. user must follow other user to see their blogs & add review (done with gRPC)
 - 10.
 - 11.
+- 12. tourist can make a review for a tour (rating: 1-5, comment, user info, tour attendance date, review date)
+- 13. - make the map easily edit peakpoints, always show map when editing peakpoints (in peakpoints tab):
 - 15.
 
-# TOFIX:
-- fix 9. user must follow other user to see their blogs & add review
-- fix 16. fix purchasing/reserving tour tours-service needs to communicate with purcase-service (maybe use RPC?)
-    - check out: purchases-service/app/api/purchase.py:def add_to_cart
-
 # TODO:
-- 13. 
-    - frontend:
-        - select keypoints on map
-        - edit keypoints on map
-        - delete keypoints on map
-        - delete travel_time
+- fix 16. fix purchasing/reserving
+    - tours-service needs to communicate with purcase-service (maybe use RPC?)
+        - fetch tour info / check if tour exists
+    - need to fix buttons on frontend (purchase)
+    - check out: purchases-service/app/api/purchase.py:def add_to_cart
+- 17. tour-service needs to do RPC with purchase-service to check if tour is bought
+    - tourist can only start tours they bought
 
-- 12. tourist can make a review for a tour (rating: 1-5, comment, user info, tour attendance date, review date)
-- 17. finish frontend for TourExecution (backend is done?)
 
-# RPC
-- make tours-service handle auth with stakeholders-service with RPC
-- make blogs-service handle auth with stakeholders-service with RPC
-  - currenly we get the JWT token that encodes user id, role, etc
-
+# mini fixes
+- make tour name clickable navigate to tour
+- review: use current date for default datetime
+- center tour map to see all peakpoints

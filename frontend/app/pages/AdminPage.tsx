@@ -17,7 +17,7 @@ interface User {
 }
 
 export default function AdminPage() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,20 +26,23 @@ export default function AdminPage() {
 
   // Redirect if not admin
   useEffect(() => {
-    if (!user || user.role.toLowerCase() !== "admin") {
+    if (isLoading) return; // Wait for auth to load
+    if (!isAuthenticated || user?.role.toLowerCase() !== "admin") {
       navigate("/", { replace: true });
-      return;
     }
-  }, [user, navigate]);
+  }, [user, navigate, isLoading, isAuthenticated]);
 
   // Fetch all users
   useEffect(() => {
-    if (!user || user.role.toLowerCase() !== "admin") return;
+    if (isLoading || !isAuthenticated || user?.role.toLowerCase() !== "admin") return;
 
     const fetchUsers = async () => {
       try {
         setLoading(true);
         const response = await fetch("/api/stakeholders-service/users/all", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
           credentials: "include",
         });
         
@@ -58,7 +61,7 @@ export default function AdminPage() {
     };
 
     fetchUsers();
-  }, [user]);
+  }, [user, isLoading, isAuthenticated, token]);
 
   const handleBlockUser = async (userId: number) => {
     if (!user) return;
@@ -69,6 +72,7 @@ export default function AdminPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         credentials: "include",
       });
@@ -97,8 +101,15 @@ export default function AdminPage() {
     }
   };
 
-  if (!user || user.role.toLowerCase() !== "admin") {
-    return null; // Component is redirecting
+  if (isLoading || !user || user.role.toLowerCase() !== "admin") {
+    // Show a loading spinner or return null while waiting for auth state and role check
+    return (
+        <Layout>
+            <div className="text-center py-12">
+                <div className="spinner mx-auto"></div>
+            </div>
+        </Layout>
+    );
   }
 
   return (

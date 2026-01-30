@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
 interface FollowStats {
   user_id: number;
@@ -36,7 +36,7 @@ interface AllUser {
 }
 
 export default function FollowersPage() {
-  const { user, isAuthenticated, token } = useAuth();
+  const { user, isAuthenticated, token, isLoading } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<FollowStats | null>(null);
   const [followers, setFollowers] = useState<Follower[]>([]);
@@ -52,10 +52,12 @@ export default function FollowersPage() {
   const USERS_API_URL = "/api/stakeholders-service/users";
 
   // Redirect if not authenticated
-  if (!isAuthenticated) {
-    navigate("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   const fetchStats = async (uid: string) => {
     try {
@@ -189,10 +191,10 @@ export default function FollowersPage() {
 
   // Load current user's data on mount
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !isLoading) {
       loadUserData(user.id.toString());
     }
-  }, [user?.id]);
+  }, [user?.id, isLoading]);
 
   // Check if user is already being followed
   const isFollowing = (userId: number) => {
@@ -207,6 +209,16 @@ export default function FollowersPage() {
   const loadMoreUsers = () => {
     setDisplayedUsersCount(prev => Math.min(prev + 10, filteredAllUsers.length));
   };
+
+  if (isLoading || !user) {
+      return (
+          <Layout>
+              <div className="text-center py-12">
+                  <div className="spinner mx-auto"></div>
+              </div>
+          </Layout>
+      );
+  }
 
   return (
     <Layout>
@@ -386,12 +398,13 @@ export default function FollowersPage() {
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
-                                <button
+                                <Link
+                                  to={`/blogs`}
                                   className="btn btn-primary btn-sm"
-                                  title="Pogledaj blog korisnika (dostupno uskoro)"
+                                  title="Pogledaj blog korisnika"
                                 >
                                   📝 Blog
-                                </button>
+                                </Link>
                                 <button
                                   onClick={() => handleUnfollow(user.user_id)}
                                   disabled={followingInProgress === user.user_id}

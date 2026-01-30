@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
+import MapComponent from "../components/MapComponent";
 import { useAuth } from "../context/AuthContext";
+import ReviewForm from "../components/ReviewForm";
+import ReviewList from "../components/ReviewList";
+import { useUserLocation } from "../hooks/useUserLocation";
 
 interface Tour {
   id: number;
@@ -17,6 +21,16 @@ interface Tour {
   updated_at: string;
 }
 
+interface KeyPoint {
+  id: number;
+  name: string;
+  description: string;
+  latitude: number;
+  longitude: number;
+  image_url: string;
+  order: number;
+}
+
 export default function TourDetailPage() {
   const { id } = useParams();
   const { token, user } = useAuth();
@@ -25,6 +39,12 @@ export default function TourDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [keyPoints, setKeyPoints] = useState<KeyPoint[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const userLocation = useUserLocation();
+  const [startingTour, setStartingTour] = useState(false);
+  const [hasActiveTour, setHasActiveTour] = useState(false);
 
   const fetchTour = async () => {
     try {
@@ -45,6 +65,30 @@ export default function TourDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to load tour");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchKeyPoints = async () => {
+    try {
+      const response = await fetch(`/api/tours-service/tours/${id}/keypoints`);
+      if (response.ok) {
+        const data = await response.json();
+        setKeyPoints(data.keypoints || []);
+      }
+    } catch (err) {
+      console.error("Error fetching key points:", err);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`/api/tours-service/tours/${id}/reviews`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
     }
   };
 
@@ -78,8 +122,84 @@ export default function TourDetailPage() {
   useEffect(() => {
     if (id) {
       fetchTour();
+      fetchKeyPoints();
+      fetchReviews();
     }
   }, [id]);
+
+  // Check if user has an active tour
+  useEffect(() => {
+    const checkActiveTour = async () => {
+      if (!token || !user) return;
+      
+      try {
+        const response = await fetch("/api/tours-service/tours/execution/active", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        setHasActiveTour(response.ok);
+      } catch (error) {
+        console.error("Error checking active tour:", error);
+      }
+    };
+
+    checkActiveTour();
+  }, [token, user]);
+
+  const handleReviewSuccess = () => {
+    setShowReviewForm(false);
+    fetchReviews();
+  };
+
+  const handleStartTour = async () => {
+    if (!token || !user || !tour) return;
+
+    try {
+      setStartingTour(true);
+
+      // First, get current location from Position Simulator
+      const locationResponse = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
+        credentials: "include",
+      });
+
+      if (!locationResponse.ok) {
+        throw new Error("Molimo prvo postavite vašu lokaciju pomoću Position Simulatora");
+      }
+
+      const locationData = await locationResponse.json();
+      
+      if (!locationData.current_location) {
+        throw new Error("Molimo prvo postavite vašu lokaciju pomoću Position Simulatora");
+      }
+
+      const { latitude, longitude } = locationData.current_location;
+
+      // Start the tour
+      const response = await fetch(`/api/tours-service/tours/${tour.id}/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ latitude, longitude })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Greška pri pokretanju ture");
+      }
+
+      // Redirect to active tour page
+      navigate("/tours/active");
+    } catch (error) {
+      console.error("Error starting tour:", error);
+      alert(error instanceof Error ? error.message : "Greška pri pokretanju ture");
+    } finally {
+      setStartingTour(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("sr-RS", {
@@ -160,6 +280,12 @@ export default function TourDetailPage() {
 
   const isOwner = user && tour.author_id === user.id;
   const canEdit = user?.role.toLowerCase() === "vodic" && isOwner;
+  const isAuthenticated = !!token;
+
+  const handleMapClick = (lat: number, lng: number) => {
+    // For TourDetailPage, map is read-only
+    console.log("Map clicked at:", lat, lng);
+  };
 
   return (
     <Layout>
@@ -229,6 +355,39 @@ export default function TourDetailPage() {
               </p>
             </div>
 
+            {/* Map */}
+            <div className="card">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                Mapa Ture
+              </h2>
+              <div className="h-96 rounded-lg overflow-hidden border">
+                <MapComponent
+                  latitude={userLocation?.latitude}
+                  longitude={userLocation?.longitude}
+                  onMapClick={handleMapClick}
+                  className="w-full h-full"
+                  keyPoints={keyPoints.map(kp => ({
+                    id: kp.id,
+                    name: kp.name,
+                    latitude: kp.latitude,
+                    longitude: kp.longitude,
+                    order: kp.order
+                  }))}
+                  showUserLocation={!!userLocation}
+                />
+              </div>
+              {keyPoints.length > 0 && (
+                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                  <p className="font-medium mb-2">Ključne tačke:</p>
+                  <ul className="space-y-1">
+                    {keyPoints.map((kp) => (
+                      <li key={kp.id}>• {kp.name} ({kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)})</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
             {/* Additional Information */}
             <div className="card">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -272,9 +431,33 @@ export default function TourDetailPage() {
                 <p className="text-gray-600 dark:text-gray-400">po osobi</p>
               </div>
               
-              <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Rezervišite sada
-              </button>
+              {user?.role.toLowerCase() === "turista" && (tour.status === "published" || tour.status === "archived") && (
+                <>
+                  {hasActiveTour ? (
+                    <div className="space-y-3">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
+                        <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                          Već imate aktivnu turu
+                        </p>
+                      </div>
+                      <Link 
+                        to="/tours/active"
+                        className="block w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
+                      >
+                        Pogledaj aktivnu turu
+                      </Link>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleStartTour}
+                      disabled={startingTour}
+                      className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {startingTour ? "Pokretanje..." : "🚀 Pokreni turu"}
+                    </button>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Tour Details Card */}
@@ -336,6 +519,31 @@ export default function TourDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Recenzije ({reviews.length})
+            </h2>
+            {isAuthenticated && user?.role.toLowerCase() === "turista" && !isOwner && (
+              <button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {showReviewForm ? "Otkaži" : "Ostavite recenziju"}
+              </button>
+            )}
+          </div>
+
+          {showReviewForm && tour && (
+            <div className="mb-8 bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+              <ReviewForm tourId={tour.id} onSuccess={handleReviewSuccess} />
+            </div>
+          )}
+
+          <ReviewList reviews={reviews} />
         </div>
       </div>
     </Layout>

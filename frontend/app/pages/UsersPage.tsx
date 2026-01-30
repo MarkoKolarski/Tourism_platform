@@ -27,7 +27,7 @@ interface ProfileUpdateData {
 }
 
 export default function UsersPage() {
-  const { user: currentUser, isAuthenticated, token } = useAuth();
+  const { user: currentUser, isAuthenticated, token, isLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -37,17 +37,24 @@ export default function UsersPage() {
   const API_URL = "/api/stakeholders-service/users";
 
   // Redirect if not authenticated
-  if (!isAuthenticated) {
-    navigate("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   // Load current user's profile on mount
   useEffect(() => {
+    if (isLoading || !currentUser?.id) return;
+
     const fetchMyProfile = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API_URL}/me?user_id=${currentUser?.id}`);
+        const response = await fetch(`${API_URL}/me?user_id=${currentUser.id}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
         const data = await response.json();
         setSelectedUser(data);
         setFormData({
@@ -66,7 +73,7 @@ export default function UsersPage() {
     };
 
     fetchMyProfile();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, isLoading, token]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +83,8 @@ export default function UsersPage() {
       const response = await fetch(`${API_URL}/profile?user_id=${currentUser?.id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -87,7 +95,11 @@ export default function UsersPage() {
         setIsEditing(false);
         
         // Reload profile
-        const profileResponse = await fetch(`${API_URL}/me?user_id=${currentUser?.id}`);
+        const profileResponse = await fetch(`${API_URL}/me?user_id=${currentUser?.id}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
         const updatedProfile = await profileResponse.json();
         setSelectedUser(updatedProfile);
       } else {
@@ -108,6 +120,16 @@ export default function UsersPage() {
       [e.target.name]: e.target.value
     });
   };
+
+  if (isLoading || !currentUser) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <div className="spinner mx-auto"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

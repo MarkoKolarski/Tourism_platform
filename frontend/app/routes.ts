@@ -15,8 +15,9 @@ export default [
   route("tours", "pages/ToursPage.tsx"),
   route("tours/create", "pages/CreateTourPage.tsx"),
   route("my-tours", "pages/MyToursPage.tsx"),
+  route("tours/active", "pages/ActiveTourPage.tsx"),
   route("tours/manage/:id", "pages/ManageTourPage.tsx"),
   route("tours/edit/:id", "pages/EditTourPage.tsx"),
   route("tours/:id", "pages/TourDetailPage.tsx"),
-  route("tourist-tours/", "pages/TouristTourPage.tsx"),
+  route("tourist-tours", "pages/TouristTourPage.tsx"),
 ] satisfies RouteConfig;

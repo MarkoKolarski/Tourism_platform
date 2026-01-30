@@ -302,7 +302,7 @@ export default function TouristTourPage() {
                       Autor: {tour.author_name || `ID: ${tour.author_id}`}
                     </div>*/}
                     <Link
-                      to={`/tour/${tour.id}`}
+                      to={`/tours/${tour.id}`}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Vidi detalje

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # API
     api_title: str = "Tourism Platform - Purchase Service"
     api_version: str = "1.0.0"
-    api_prefix: str = "/"
+    api_prefix: str = ""
 
     # URLs drugih mikroservisa
     stakeholders_service_url: str = "http://localhost:8001"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,7 +18,8 @@ interface Tour {
 }
 
 export default function MyToursPage() {
-  const { token, user } = useAuth();
+  const { token, user, isLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [tours, setTours] = useState<Tour[]>([]);
   const [filteredTours, setFilteredTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,26 +31,15 @@ export default function MyToursPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("newest");
 
-  // Redirect if not VODIC
-  if (user?.role.toLowerCase() !== "vodic") {
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-            <div className="text-6xl mb-4">🚫</div>
-            <h2 className="text-2xl font-bold text-red-800 dark:text-red-200 mb-2">
-              Nemate dozvolu
-            </h2>
-            <p className="text-red-600 dark:text-red-300">
-              Samo vodiči mogu upravljati turama.
-            </p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated || user?.role.toLowerCase() !== "vodic") {
+      navigate("/", { replace: true });
+    }
+  }, [isLoading, isAuthenticated, user, navigate]);
 
   const fetchMyTours = async () => {
+    if (!token) return;
     try {
       setLoading(true);
       const response = await fetch("/api/tours-service/tours/my", {
@@ -151,8 +141,10 @@ export default function MyToursPage() {
   };
 
   useEffect(() => {
-    fetchMyTours();
-  }, []);
+    if (!isLoading && token) {
+      fetchMyTours();
+    }
+  }, [isLoading, token]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("sr-RS", {
@@ -196,15 +188,28 @@ export default function MyToursPage() {
 
   const statusCounts = getStatusCounts();
 
-  if (loading) {
+  if (isLoading || !user) {
     return (
       <Layout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-gray-300 rounded h-48 mb-4"></div>
-            ))}
+        <div className="text-center py-12">
+          <div className="spinner mx-auto"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (user.role.toLowerCase() !== "vodic") {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-red-800 dark:text-red-200 mb-2">
+              Nemate dozvolu
+            </h2>
+            <p className="text-red-600 dark:text-red-300">
+              Samo vodiči mogu upravljati turama.
+            </p>
           </div>
         </div>
       </Layout>

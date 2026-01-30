@@ -90,3 +90,22 @@ func CreateTravelTime(db *sql.DB, tourID int, req CreateTravelTimeRequest) (*Tra
 
 	return &tt, nil
 }
+
+func DeleteTravelTime(db *sql.DB, id int, tourID int) error {
+	query := `DELETE FROM travel_times WHERE id = $1 AND tour_id = $2`
+	result, err := db.Exec(query, id, tourID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
