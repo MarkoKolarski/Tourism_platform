@@ -28,7 +28,7 @@ interface BlogsResponse {
 }
 
 export default function BlogsPage() {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, isLoading } = useAuth();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export default function BlogsPage() {
       }
 
       const headers: HeadersInit = {};
-      if (isAuthenticated && token) {
+      if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
@@ -84,8 +84,10 @@ export default function BlogsPage() {
   };
 
   useEffect(() => {
-    fetchBlogs(currentPage, searchTerm);
-  }, [currentPage, isAuthenticated]); // Add isAuthenticated to re-fetch on login/logout
+    if (!isLoading) { // Only fetch when auth state is resolved
+      fetchBlogs(currentPage, searchTerm);
+    }
+  }, [currentPage, isLoading, isAuthenticated]); // Re-fetch on auth change
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +111,18 @@ export default function BlogsPage() {
       minute: "2-digit"
     });
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="spinner mx-auto"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (loading && blogs.length === 0) {
     return (
