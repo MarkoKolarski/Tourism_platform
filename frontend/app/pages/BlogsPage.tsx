@@ -40,6 +40,7 @@ export default function BlogsPage() {
   const fetchBlogs = async (page: number = 1, search: string = "") => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
