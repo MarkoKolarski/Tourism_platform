@@ -29,12 +29,12 @@ type CreateKeyPointRequest struct {
 }
 
 type UpdateKeyPointRequest struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	ImageURL    string  `json:"image_url"`
-	Order       int     `json:"order"`
+	Name        *string  `json:"name"`
+	Description *string  `json:"description"`
+	Latitude    *float64 `json:"latitude"`
+	Longitude   *float64 `json:"longitude"`
+	ImageURL    *string  `json:"image_url"`
+	Order       *int     `json:"order"`
 }
 
 func CreateKeyPointsTable(db *sql.DB) error {
@@ -142,21 +142,50 @@ func updateTourLength(db *sql.DB, tourID int, length float64) {
 }
 
 func UpdateKeyPoint(db *sql.DB, id int, tourID int, req UpdateKeyPointRequest) (*KeyPoint, error) {
+	// First, get the current keypoint to have a base for updates
+	var currentKp KeyPoint
+	err := db.QueryRow(`SELECT name, description, latitude, longitude, image_url, "order" FROM key_points WHERE id = $1 AND tour_id = $2`, id, tourID).Scan(
+		&currentKp.Name, &currentKp.Description, &currentKp.Latitude, &currentKp.Longitude, &currentKp.ImageURL, &currentKp.Order,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply changes from request
+	if req.Name != nil {
+		currentKp.Name = *req.Name
+	}
+	if req.Description != nil {
+		currentKp.Description = *req.Description
+	}
+	if req.Latitude != nil {
+		currentKp.Latitude = *req.Latitude
+	}
+	if req.Longitude != nil {
+		currentKp.Longitude = *req.Longitude
+	}
+	if req.ImageURL != nil {
+		currentKp.ImageURL = *req.ImageURL
+	}
+	if req.Order != nil {
+		currentKp.Order = *req.Order
+	}
+
 	query := `
     UPDATE key_points 
-    SET name = COALESCE(NULLIF($1, ''), name),
-        description = COALESCE(NULLIF($2, ''), description),
-        latitude = CASE WHEN $3 != 0 THEN $3 ELSE latitude END,
-        longitude = CASE WHEN $4 != 0 THEN $4 ELSE longitude END,
-        image_url = COALESCE(NULLIF($5, ''), image_url),
-        "order" = CASE WHEN $6 > 0 THEN $6 ELSE "order" END,
+    SET name = $1,
+        description = $2,
+        latitude = $3,
+        longitude = $4,
+        image_url = $5,
+        "order" = $6,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = $7 AND tour_id = $8
     RETURNING id, tour_id, name, description, latitude, longitude, image_url, "order", created_at, updated_at`
 
 	var kp KeyPoint
-	err := db.QueryRow(
-		query, req.Name, req.Description, req.Latitude, req.Longitude, req.ImageURL, req.Order, id, tourID,
+	err = db.QueryRow(
+		query, currentKp.Name, currentKp.Description, currentKp.Latitude, currentKp.Longitude, currentKp.ImageURL, currentKp.Order, id, tourID,
 	).Scan(
 		&kp.ID, &kp.TourID, &kp.Name, &kp.Description,
 		&kp.Latitude, &kp.Longitude, &kp.ImageURL, &kp.Order,
@@ -165,6 +194,13 @@ func UpdateKeyPoint(db *sql.DB, id int, tourID int, req UpdateKeyPointRequest) (
 
 	if err != nil {
 		return nil, err
+	}
+
+	// After updating, recalculate tour length
+	keyPoints, err := GetKeyPointsByTourID(db, tourID)
+	if err == nil && len(keyPoints) > 1 {
+		length := calculateTourLengthKm(keyPoints)
+		updateTourLength(db, tourID, length)
 	}
 
 	return &kp, nil

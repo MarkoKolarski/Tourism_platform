@@ -48,7 +48,9 @@ export default function ManageTourPage() {
   
   // Key Point Form
   const [showKPForm, setShowKPForm] = useState(false);
+  const [editingKeyPoint, setEditingKeyPoint] = useState<KeyPoint | null>(null);
   const [kpForm, setKpForm] = useState({
+    id: null as number | null,
     name: "",
     description: "",
     latitude: "",
@@ -73,14 +75,14 @@ export default function ManageTourPage() {
   }, [id]);
 
   useEffect(() => {
-    // Automatski postavi order na sledeći redni broj
-    if (showKPForm) {
+    // Automatski postavi order na sledeći redni broj samo kod dodavanja
+    if (showKPForm && !editingKeyPoint) {
       setKpForm(prev => ({
         ...prev,
         order: (keyPoints.length + 1).toString()
       }));
     }
-  }, [showKPForm, keyPoints.length]);
+  }, [showKPForm, keyPoints.length, editingKeyPoint]);
 
   const fetchTourData = async () => {
     try {
@@ -120,7 +122,7 @@ export default function ManageTourPage() {
     });
   };
 
-  const handleAddKeyPoint = async (e: React.FormEvent) => {
+  const handleAddOrUpdateKeyPoint = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Proveri da li je lokacija odabrana
@@ -129,9 +131,15 @@ export default function ManageTourPage() {
       return;
     }
 
+    const isEditing = !!editingKeyPoint;
+    const url = isEditing
+      ? `/api/tours-service/tours/${id}/keypoints/${editingKeyPoint.id}`
+      : `/api/tours-service/tours/${id}/keypoints`;
+    const method = isEditing ? "PUT" : "POST";
+
     try {
-      const response = await fetch(`/api/tours-service/tours/${id}/keypoints`, {
-        method: "POST",
+      const response = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -146,14 +154,16 @@ export default function ManageTourPage() {
         })
       });
 
-      if (!response.ok) throw new Error("Failed to add key point");
+      if (!response.ok) throw new Error(`Failed to ${isEditing ? 'update' : 'add'} key point`);
 
-      setKpForm({ name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
+      // Resetuj formu i stanje
+      setKpForm({ id: null, name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
       setSelectedPosition(null);
       setShowKPForm(false);
+      setEditingKeyPoint(null);
       fetchTourData();
     } catch (err) {
-      alert("Failed to add key point");
+      alert(`Failed to ${isEditing ? 'update' : 'add'} key point`);
     }
   };
 
@@ -218,6 +228,29 @@ export default function ManageTourPage() {
     } catch (err) {
       alert("Failed to archive tour");
     }
+  };
+
+  const handleEditKeyPoint = (kp: KeyPoint) => {
+    setEditingKeyPoint(kp);
+    setKpForm({
+      id: kp.id,
+      name: kp.name,
+      description: kp.description,
+      latitude: kp.latitude.toString(),
+      longitude: kp.longitude.toString(),
+      image_url: kp.image_url,
+      order: kp.order.toString()
+    });
+    setShowKPForm(true);
+    setSelectedPosition([kp.latitude, kp.longitude]);
+    setMapCenter([kp.latitude, kp.longitude]);
+  };
+
+  const cancelEdit = () => {
+    setEditingKeyPoint(null);
+    setShowKPForm(false);
+    setSelectedPosition(null);
+    setKpForm({ id: null, name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
   };
 
   const handleDeleteKeyPoint = async (kpId: number) => {
@@ -316,141 +349,157 @@ export default function ManageTourPage() {
 
         {/* Key Points Tab */}
         {activeTab === "keypoints" && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Ključne tačke</h2>
-              <button
-                onClick={() => {
-                  setShowKPForm(!showKPForm);
-                  setSelectedPosition(null);
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg"
-              >
-                + Dodaj ključnu tačku
-              </button>
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Left Column: List and Form */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Ključne tačke</h2>
+                {!showKPForm && (
+                  <button
+                    onClick={() => {
+                      setShowKPForm(true);
+                      setEditingKeyPoint(null);
+                      setSelectedPosition(null);
+                      setKpForm({ id: null, name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                  >
+                    + Dodaj ključnu tačku
+                  </button>
+                )}
+              </div>
+
+              {showKPForm && (
+                <form onSubmit={handleAddOrUpdateKeyPoint} className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4">{editingKeyPoint ? "Izmena ključne tačke" : "Dodavanje nove ključne tačke"}</h3>
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <input
+                      type="text"
+                      placeholder="Naziv *"
+                      required
+                      value={kpForm.name}
+                      onChange={(e) => setKpForm({ ...kpForm, name: e.target.value })}
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Redni broj"
+                      value={kpForm.order}
+                      readOnly
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Geografska širina *"
+                      required
+                      readOnly
+                      value={kpForm.latitude}
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Geografska dužina *"
+                      required
+                      readOnly
+                      value={kpForm.longitude}
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                    />
+                    <input
+                      type="text"
+                      placeholder="URL slike"
+                      value={kpForm.image_url}
+                      onChange={(e) => setKpForm({ ...kpForm, image_url: e.target.value })}
+                      className="sm:col-span-2 px-4 py-2 border rounded-lg dark:bg-gray-700"
+                    />
+                  </div>
+                  <textarea
+                    placeholder="Opis *"
+                    required
+                    rows={3}
+                    value={kpForm.description}
+                    onChange={(e) => setKpForm({ ...kpForm, description: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg mb-4 dark:bg-gray-700"
+                  />
+                  
+                  <p className="mb-2 font-medium text-sm">Odaberite lokaciju klikom na mapu.</p>
+
+                  <div className="flex gap-2">
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                      {editingKeyPoint ? "Sačuvaj izmene" : "Sačuvaj"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="px-4 py-2 border rounded-lg"
+                    >
+                      Otkaži
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div className="space-y-4">
+                {keyPoints.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Nema ključnih tačaka. Dodajte najmanje 2 da biste objavili turu.</p>
+                ) : (
+                  keyPoints.sort((a, b) => a.order - b.order).map((kp) => (
+                    <div key={kp.id} className={`border rounded-lg p-4 ${editingKeyPoint?.id === kp.id ? 'bg-blue-50 border-blue-300 dark:bg-gray-800 dark:border-blue-700' : 'dark:bg-gray-800'}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-lg">{kp.order}. {kp.name}</h3>
+                          <p className="text-gray-600 dark:text-gray-400 mb-2 text-sm">{kp.description}</p>
+                          <p className="text-sm text-gray-500">
+                            📍 {kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)}
+                          </p>
+                          {kp.image_url && (
+                            <img 
+                              src={kp.image_url} 
+                              alt={kp.name} 
+                              className="mt-2 max-w-xs rounded-lg"
+                            />
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2 shrink-0 ml-2">
+                          <button
+                            onClick={() => handleEditKeyPoint(kp)}
+                            className="text-sm px-3 py-1 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            Uredi
+                          </button>
+                          <button
+                            onClick={() => handleDeleteKeyPoint(kp.id)}
+                            className="text-red-600 hover:text-red-800 text-xl"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
-            {showKPForm && (
-              <form onSubmit={handleAddKeyPoint} className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-6">
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <input
-                    type="text"
-                    placeholder="Naziv *"
-                    required
-                    value={kpForm.name}
-                    onChange={(e) => setKpForm({ ...kpForm, name: e.target.value })}
-                    className="px-4 py-2 border rounded-lg dark:bg-gray-700"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Redni broj"
-                    value={kpForm.order}
-                    readOnly
-                    className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Geografska širina *"
-                    required
-                    readOnly
-                    value={kpForm.latitude}
-                    className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Geografska dužina *"
-                    required
-                    readOnly
-                    value={kpForm.longitude}
-                    className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
-                  />
-                  <input
-                    type="text"
-                    placeholder="URL slike"
-                    value={kpForm.image_url}
-                    onChange={(e) => setKpForm({ ...kpForm, image_url: e.target.value })}
-                    className="md:col-span-2 px-4 py-2 border rounded-lg dark:bg-gray-700"
-                  />
-                </div>
-                <textarea
-                  placeholder="Opis *"
-                  required
-                  rows={3}
-                  value={kpForm.description}
-                  onChange={(e) => setKpForm({ ...kpForm, description: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg mb-4 dark:bg-gray-700"
-                />
-                
-                {/* Mapa */}
-                <div className="mb-4">
-                  <p className="mb-2 font-medium">Odaberite lokaciju klikom na mapu:</p>
-                  <div className="h-64 rounded-lg overflow-hidden border">
-                    {typeof window !== "undefined" ? (
-                      <Suspense fallback={<div className="h-full flex items-center justify-center">Učitavam mapu...</div>}>
-                        <TourMap
-                          center={mapCenter}
-                          keyPoints={keyPoints}
-                          selectedPosition={selectedPosition}
-                          onMapClick={handleMapClick}
-                        />
-                      </Suspense>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-gray-500">
-                        Mapa se učitava...
-                      </div>
-                    )}
+            {/* Right Column: Map */}
+            <div className="h-[calc(100vh-10rem)] sticky top-24">
+              <p className="mb-2 font-medium">Mapa ključnih tačaka</p>
+              <div className="h-full rounded-lg overflow-hidden border">
+                {typeof window !== "undefined" ? (
+                  <Suspense fallback={<div className="h-full flex items-center justify-center">Učitavam mapu...</div>}>
+                    <TourMap
+                      center={mapCenter}
+                      keyPoints={keyPoints}
+                      selectedPosition={selectedPosition}
+                      onMapClick={handleMapClick}
+                      editingKpId={editingKeyPoint?.id}
+                    />
+                  </Suspense>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    Mapa se učitava...
                   </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">
-                    Sačuvaj
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowKPForm(false);
-                      setSelectedPosition(null);
-                    }}
-                    className="px-4 py-2 border rounded-lg"
-                  >
-                    Otkaži
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div className="space-y-4">
-              {keyPoints.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Nema ključnih tačaka. Dodajte najmanje 2 da biste objavili turu.</p>
-              ) : (
-                keyPoints.sort((a, b) => a.order - b.order).map((kp) => (
-                  <div key={kp.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-lg">{kp.order}. {kp.name}</h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">{kp.description}</p>
-                        <p className="text-sm text-gray-500">
-                          📍 {kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)}
-                        </p>
-                        {kp.image_url && (
-                          <img 
-                            src={kp.image_url} 
-                            alt={kp.name} 
-                            className="mt-2 max-w-xs rounded-lg"
-                          />
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteKeyPoint(kp.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}

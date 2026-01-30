@@ -490,6 +490,22 @@ func updateKeyPoint(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Verify tour ownership
+		userIDInterface, _ := c.Get("user_id")
+		var authorID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			authorID = int(v)
+		case string:
+			authorID, _ = strconv.Atoi(v)
+		}
+
+		tour, err := models.GetTourByID(db, tourID)
+		if err != nil || tour.AuthorID != authorID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized"})
+			return
+		}
+
 		keyPoint, err := models.UpdateKeyPoint(db, kpID, tourID, req)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update key point"})
