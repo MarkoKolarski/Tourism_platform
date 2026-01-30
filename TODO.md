@@ -10,7 +10,9 @@
 - 15.
 
 # TODO:
-- need to fix buttons on frontend
-- fix 16. fix purchasing/reserving tour tours-service needs to communicate with purcase-service (maybe use RPC?)
+- fix 16. fix purchasing/reserving
+    - tours-service needs to communicate with purcase-service (maybe use RPC?)
+        - fetch tour info / check if tour exists
+    - need to fix buttons on frontend (purchase)
     - check out: purchases-service/app/api/purchase.py:def add_to_cart
 - 17. finish frontend for TourExecution (backend is done?)
