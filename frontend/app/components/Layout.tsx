@@ -34,71 +34,85 @@ export default function Layout({ children }: LayoutProps) {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link to="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                🏠 Početna
+            <div className="hidden md:flex items-center space-x-1">
+              <Link to="/" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🏠</span>
+                <span className="text-xs font-medium">Početna</span>
               </Link>
               {isAuthenticated && (
                 <>
-                  <Link to="/users" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    👤 Profil
+                  <Link to="/users" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">👤</span>
+                    <span className="text-xs font-medium">Profil</span>
                   </Link>
-                  <Link to="/blogs" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    📖 Blogs
+                  <Link to="/blogs" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📖</span>
+                    <span className="text-xs font-medium">Blogs</span>
                   </Link>
-                  <Link to="/followers" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    🔗 Pratioci
+                  <Link to="/followers" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🔗</span>
+                    <span className="text-xs font-medium">Pratioci</span>
                   </Link>
-                  <Link to="/purchase" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    🛒 Kupovina
+                  <Link to="/purchase" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛒</span>
+                    <span className="text-xs font-medium">Kupovina</span>
                   </Link>
-                  <Link to="/simulator" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    📍 Simulator
+                  <Link to="/simulator" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📍</span>
+                    <span className="text-xs font-medium">Simulator</span>
                   </Link>
                   {user?.role.toLowerCase() === "admin" && (
-                    <Link to="/admin" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                      🛠️ Admin
+                    <Link to="/admin" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛠️</span>
+                      <span className="text-xs font-medium">Admin</span>
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "turista" && (
-                    <Link to="/tourist-tours/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                      🗺️ Ture
+                    <Link to="/tourist-tours/" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🗺️</span>
+                      <span className="text-xs font-medium">Ture</span>
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "vodic" && (
                     <>
-                    <Link to="/my-tours" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
-                      📝 Moje ture
+                    <Link to="/my-tours" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📝</span>
+                      <span className="text-xs font-medium whitespace-nowrap">Moje ture</span>
                     </Link>
-                    <Link to="/tours/create" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
-                      ✏️ Kreiraj turu
+                    <Link to="/tours/create" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">✏️</span>
+                      <span className="text-xs font-medium whitespace-nowrap">Kreiraj</span>
                     </Link>
                     </>
                   )}
                 </>
               )}
               
-              {isAuthenticated ? (
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg">
-                    <span className="text-lg">👤</span>
-                    <span className="font-medium">{user?.username}</span>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 font-medium"
+              <div className="flex items-center space-x-3 pl-4 ml-4 border-l border-gray-200 dark:border-gray-700">
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg">
+                      <span className="text-lg">👤</span>
+                      <span className="font-medium text-sm">{user?.username}</span>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors group"
+                    >
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🚪</span>
+                      <span className="text-xs font-medium">Odjava</span>
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 flex items-center gap-2"
                   >
-                    🚪 Odjavi se
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600"
-                >
-                  🔐 Prijavi se
-                </Link>
-              )}
+                    <span>🔐</span>
+                    <span>Prijavi se</span>
+                  </Link>
+                )}
+              </div>
             </div>
 
             {/* Mobile menu button */}
