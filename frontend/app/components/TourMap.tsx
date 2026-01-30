@@ -11,33 +11,28 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Custom ikona za lokaciju korisnika
-const userLocationIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Custom ikona za lokaciju korisnika (pulsirajući crveni krug)
+const userLocationIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div style="
+    width: 20px;
+    height: 20px;
+    background-color: #ef4444;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    animation: pulse 2s infinite;
+  "></div>
+  <style>
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
-
-// Funkcija za kreiranje numerisanih ikona
-const createNumberedIcon = (number: number, isEditing: boolean) => {
-  const iconUrl = isEditing 
-    ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png'
-    : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png';
-
-  return L.divIcon({
-    html: `<div style="position: relative; text-align: center;">
-             <img src="${iconUrl}" style="width: 25px; height: 41px;">
-             <span style="position: absolute; top: 6px; left: 0; right: 0; color: white; font-size: 12px; font-weight: bold;">${number}</span>
-           </div>`,
-    className: 'custom-div-icon',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  });
-};
 
 interface TourMapProps {
   center: [number, number];
@@ -86,7 +81,6 @@ export default function TourMap({
         <Marker 
           key={kp.id} 
           position={[kp.latitude, kp.longitude]}
-          icon={createNumberedIcon(kp.order, editingKpId === kp.id)}
         >
           <Popup>
             <strong>{kp.order}. {kp.name}</strong>
