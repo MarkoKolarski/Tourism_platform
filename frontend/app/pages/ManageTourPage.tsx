@@ -86,9 +86,9 @@ export default function ManageTourPage() {
     try {
       setLoading(true);
       const [tourRes, kpRes, ttRes] = await Promise.all([
-        fetch(`/api/v1/tours/${id}`),
-        fetch(`/api/v1/tours/${id}/keypoints`),
-        fetch(`/api/v1/tours/${id}/travel-times`)
+        fetch(`/api/tours-service/tours/${id}`),
+        fetch(`/api/tours-service/tours/${id}/keypoints`),
+        fetch(`/api/tours-service/tours/${id}/travel-times`)
       ]);
 
       const tourData = await tourRes.json();
@@ -130,7 +130,7 @@ export default function ManageTourPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/tours/${id}/keypoints`, {
+      const response = await fetch(`/api/tours-service/tours/${id}/keypoints`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,7 +160,7 @@ export default function ManageTourPage() {
   const handleAddTravelTime = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/v1/tours/${id}/travel-times`, {
+      const response = await fetch(`/api/tours-service/tours/${id}/travel-times`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -185,7 +185,7 @@ export default function ManageTourPage() {
     if (!confirm("Da li ste sigurni da želite da objavite ovu turu?")) return;
 
     try {
-      const response = await fetch(`/api/v1/tours/${id}/publish`, {
+      const response = await fetch(`/api/tours-service/tours/${id}/publish`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -206,7 +206,7 @@ export default function ManageTourPage() {
     if (!confirm("Da li ste sigurni da želite da arhivirate ovu turu?")) return;
 
     try {
-      const response = await fetch(`/api/v1/tours/${id}/archive`, {
+      const response = await fetch(`/api/tours-service/tours/${id}/archive`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -224,7 +224,7 @@ export default function ManageTourPage() {
     if (!confirm("Obrisati ovu ključnu tačku?")) return;
 
     try {
-      const response = await fetch(`/api/v1/tours/${id}/keypoints/${kpId}`, {
+      const response = await fetch(`/api/tours-service/tours/${id}/keypoints/${kpId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });

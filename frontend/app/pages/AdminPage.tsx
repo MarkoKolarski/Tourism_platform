@@ -39,7 +39,7 @@ export default function AdminPage() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/v1/users/all", {
+        const response = await fetch("/api/stakeholders-service/users/all", {
           credentials: "include",
         });
         
@@ -65,7 +65,7 @@ export default function AdminPage() {
 
     try {
       setBlockingUser(userId);
-      const response = await fetch(`/api/v1/users/block/${userId}?admin_user_id=${user.id}`, {
+      const response = await fetch(`/api/stakeholders-service/users/block/${userId}?admin_user_id=${user.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

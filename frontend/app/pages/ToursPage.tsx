@@ -28,7 +28,7 @@ export default function ToursPage() {
   const fetchTours = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/v1/tours");
+      const response = await fetch("/api/tours-service/tours");
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

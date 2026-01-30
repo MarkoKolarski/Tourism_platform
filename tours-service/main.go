@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"os"
-	"tour-service/config"
-	"tour-service/database"
-	"tour-service/routes"
+	"tours-service/config"
+	"tours-service/database"
+	"tours-service/routes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

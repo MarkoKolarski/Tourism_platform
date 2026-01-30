@@ -49,7 +49,7 @@ export default function BlogsPage() {
         params.append("search", search.trim());
       }
 
-      const response = await fetch(`http://localhost:8004/api/blogs?${params}`);
+      const response = await fetch(`/api/blogs-service/blogs?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

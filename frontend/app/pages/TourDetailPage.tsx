@@ -29,7 +29,7 @@ export default function TourDetailPage() {
   const fetchTour = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v1/tours/${id}`);
+      const response = await fetch(`/api/tours-service/tours/${id}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -55,7 +55,7 @@ export default function TourDetailPage() {
 
     try {
       setDeleteLoading(true);
-      const response = await fetch(`/api/v1/tours/${tour.id}`, {
+      const response = await fetch(`/api/tours-service/tours/${tour.id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`

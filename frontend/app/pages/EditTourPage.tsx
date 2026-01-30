@@ -55,7 +55,7 @@ export default function EditTourPage() {
   useEffect(() => {
     const fetchTour = async () => {
       try {
-        const response = await fetch(`/api/v1/tours/${id}`);
+        const response = await fetch(`/api/tours-service/tours/${id}`);
         if (!response.ok) throw new Error("Failed to fetch tour");
         
         const data = await response.json();
@@ -93,7 +93,7 @@ export default function EditTourPage() {
     try {
       const tagsArray = formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0);
       
-      const response = await fetch(`/api/v1/tours/${id}`, {
+      const response = await fetch(`/api/tours-service/tours/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

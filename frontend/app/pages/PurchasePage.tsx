@@ -52,7 +52,7 @@ export default function PurchasePage() {
   const [activeTab, setActiveTab] = useState<"cart" | "tokens" | "transactions">("cart");
   const [showDevModal, setShowDevModal] = useState(false);
 
-  const API_URL = "/api/v1/purchase";
+  const API_URL = "/api/purchases-service";
 
   // Map backend status values to Serbian labels and badge classes
   const statusToSerbian = (status: string | boolean | undefined) => {

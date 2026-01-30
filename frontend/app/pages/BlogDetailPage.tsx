@@ -45,7 +45,7 @@ export default function BlogDetailPage() {
   const fetchBlog = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8004/api/blogs/${id}`);
+      const response = await fetch(`/api/blogs-service/blogs/${id}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,7 +74,7 @@ export default function BlogDetailPage() {
       // Ova funkcija zavisi od vašeg API-ja
       // Ako imate endpoint za proveru lajka, koristite ga
       // U suprotnom možete koristiti sledeći endpoint ili prilagoditi
-      const response = await fetch(`http://localhost:8004/api/blogs/${id}/like/status`, {
+      const response = await fetch(`/api/blogs-service/blogs/${id}/like/status`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
@@ -102,8 +102,8 @@ export default function BlogDetailPage() {
     setLikeLoading(true);
     try {
       const endpoint = isLiked 
-        ? `http://localhost:8004/api/blogs/${id}/unlike`
-        : `http://localhost:8004/api/blogs/${id}/like`;
+        ? `/api/blogs-service/blogs/${id}/unlike`
+        : `/api/blogs-service/blogs/${id}/like`;
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -144,7 +144,7 @@ export default function BlogDetailPage() {
     setLikeLoading(true);
     try {
       const method = isLiked ? "DELETE" : "POST";
-      const response = await fetch(`http://localhost:8004/api/blogs/${id}/like`, {
+      const response = await fetch(`/api/blogs-service/blogs/${id}/like`, {
         method,
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -177,7 +177,7 @@ export default function BlogDetailPage() {
 
     setIsSubmittingComment(true);
     try {
-      const response = await fetch(`http://localhost:8004/api/blogs/${id}/comments`, {
+      const response = await fetch(`/api/blogs-service/blogs/${id}/comments`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

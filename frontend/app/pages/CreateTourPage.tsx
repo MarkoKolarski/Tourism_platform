@@ -41,7 +41,7 @@ export default function CreateTourPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/v1/tours", {
+      const response = await fetch("/api/tours-service/tours", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

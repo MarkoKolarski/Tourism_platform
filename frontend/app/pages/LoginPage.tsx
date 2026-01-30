@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
-const API_URL = "/api/v1/users";
+const API_URL = "/api/stakeholders-service/users";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);

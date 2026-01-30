@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"tour-service/config"
-	"tour-service/models"
+	"tours-service/config"
+	"tours-service/models"
 )
 
 func InitDB(cfg *config.Config) *sql.DB {

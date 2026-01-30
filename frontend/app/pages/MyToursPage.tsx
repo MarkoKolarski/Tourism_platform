@@ -52,7 +52,7 @@ export default function MyToursPage() {
   const fetchMyTours = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/v1/tours/my", {
+      const response = await fetch("/api/tours-service/tours/my", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -130,7 +130,7 @@ export default function MyToursPage() {
 
     try {
       setDeleteLoading(tourId);
-      const response = await fetch(`/api/v1/tours/${tourId}`, {
+      const response = await fetch(`/api/tours-service/tours/${tourId}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
