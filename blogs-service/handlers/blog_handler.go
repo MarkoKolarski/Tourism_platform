@@ -117,6 +117,12 @@ func (h *BlogHandler) GetAllBlogs(c *gin.Context) {
 		}
 	}
 
+	// If user is not authenticated, deny access.
+	if requestingUserID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You must be logged in to view blogs."})
+		return
+	}
+
 	blogs, total, err := h.blogRepo.GetAll(page, limit, search, userID, requestingUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

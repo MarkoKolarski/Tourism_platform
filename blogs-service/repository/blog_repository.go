@@ -87,6 +87,8 @@ func (r *BlogRepository) GetAll(page, limit, search, userID string, requestingUs
 		if err != nil {
 			// Log error but continue with unfiltered results as fallback
 			println("Warning: Failed to get accessible blogs:", err.Error())
+			// Fallback: return no blogs on error to enforce security
+			return []models.Blog{}, 0, nil
 		} else if len(accessibleAuthors) > 0 {
 			// Convert int32 author IDs to UUIDs
 			accessibleUUIDs := make([]uuid.UUID, len(accessibleAuthors))
@@ -98,6 +100,9 @@ func (r *BlogRepository) GetAll(page, limit, search, userID string, requestingUs
 			// No accessible authors - return empty result
 			return []models.Blog{}, 0, nil
 		}
+	} else {
+		// If user is not authenticated, they cannot see any blogs.
+		return []models.Blog{}, 0, nil
 	}
 
 	// Apliciraj filtere
