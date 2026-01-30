@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 import ReviewForm from "../components/ReviewForm";
 import ReviewList from "../components/ReviewList";
+import { useUserLocation } from "../hooks/useUserLocation";
 
 interface Tour {
   id: number;
@@ -19,6 +20,19 @@ interface Tour {
   updated_at: string;
 }
 
+interface KeyPoint {
+  id: number;
+  name: string;
+  description: string;
+  latitude: number;
+  longitude: number;
+  image_url: string;
+  order: number;
+}
+
+// Dinamički učitaj mapu samo na klijentu
+const TourMap = lazy(() => import("../components/TourMap"));
+
 export default function TourDetailPage() {
   const { id } = useParams();
   const { token, user } = useAuth();
@@ -28,7 +42,9 @@ export default function TourDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [keyPoints, setKeyPoints] = useState<KeyPoint[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const userLocation = useUserLocation();
 
   const fetchTour = async () => {
     try {
@@ -49,6 +65,18 @@ export default function TourDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to load tour");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchKeyPoints = async () => {
+    try {
+      const response = await fetch(`/api/tours-service/tours/${id}/keypoints`);
+      if (response.ok) {
+        const data = await response.json();
+        setKeyPoints(data.keypoints || []);
+      }
+    } catch (err) {
+      console.error("Error fetching key points:", err);
     }
   };
 
@@ -94,6 +122,7 @@ export default function TourDetailPage() {
   useEffect(() => {
     if (id) {
       fetchTour();
+      fetchKeyPoints();
       fetchReviews();
     }
   }, [id]);
@@ -250,6 +279,28 @@ export default function TourDetailPage() {
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">
                 {tour.description}
               </p>
+            </div>
+
+            {/* Map */}
+            <div className="card">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                Mapa Ture
+              </h2>
+              <div className="h-96 rounded-lg overflow-hidden border">
+                {typeof window !== "undefined" ? (
+                  <Suspense fallback={<div className="h-full flex items-center justify-center">Učitavam mapu...</div>}>
+                    <TourMap
+                      center={keyPoints.length > 0 ? [keyPoints[0].latitude, keyPoints[0].longitude] : [44.7866, 20.4489]}
+                      keyPoints={keyPoints}
+                      userLocation={userLocation}
+                    />
+                  </Suspense>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    Mapa se učitava...
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Additional Information */}

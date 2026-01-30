@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import { useUserLocation } from "../hooks/useUserLocation";
 
 interface Tour {
   id: number;
@@ -69,6 +70,7 @@ export default function ManageTourPage() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([44.7866, 20.4489]); // Podrazumevano: Beograd
   const [selectedPosition, setSelectedPosition] = useState<[number, number] | null>(null);
   const mapRef = useRef<any>(null);
+  const userLocation = useUserLocation();
 
   useEffect(() => {
     fetchTourData();
@@ -492,6 +494,7 @@ export default function ManageTourPage() {
                       selectedPosition={selectedPosition}
                       onMapClick={handleMapClick}
                       editingKpId={editingKeyPoint?.id}
+                      userLocation={userLocation}
                     />
                   </Suspense>
                 ) : (
