@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package followers;
+
+option go_package = "blogs-service/proto/followers";
+
+service FollowersService {
+  rpc GetAccessibleBlogs(AccessibleBlogsRequest) returns (AccessibleBlogsResponse);
+  rpc CanReadBlog(CanReadBlogRequest) returns (CanReadBlogResponse);
+}
+
+message AccessibleBlogsRequest {
+  int32 user_id = 1;
+}
+
+message AccessibleBlogsResponse {
+  int32 user_id = 1;
+  repeated int32 accessible_authors = 2;
+  int32 count = 3;
+}
+
+message CanReadBlogRequest {
+  int32 reader_id = 1;
+  int32 blog_author_id = 2;
+}
+
+message CanReadBlogResponse {
+  int32 reader_id = 1;
+  int32 blog_author_id = 2;
+  bool can_read = 3;
+  string reason = 4;
+}

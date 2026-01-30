@@ -109,7 +109,15 @@ func (h *BlogHandler) GetAllBlogs(c *gin.Context) {
 	search := c.Query("search")
 	userID := c.Query("userId")
 
-	blogs, total, err := h.blogRepo.GetAll(page, limit, search, userID)
+	// Get requesting user ID if authenticated
+	requestingUserID := 0
+	if userIDStr, exists := c.Get("userID"); exists {
+		if userIDInt, err := strconv.Atoi(userIDStr.(string)); err == nil {
+			requestingUserID = userIDInt
+		}
+	}
+
+	blogs, total, err := h.blogRepo.GetAll(page, limit, search, userID, requestingUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
