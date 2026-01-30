@@ -49,6 +49,9 @@ type UpdateTourRequest struct {
 }
 
 func CreateToursTable(db *sql.DB) error {
+
+	// TODO: this will drop existing data - modify in production
+
 	// Drop and recreate to ensure schema is correct
 	dropQuery := `DROP TABLE IF EXISTS tours CASCADE`
 	_, err := db.Exec(dropQuery)
@@ -387,16 +390,16 @@ func GetToursForTourists(db *sql.DB) ([]map[string]interface{}, error) {
 		}
 
 		tourData := map[string]interface{}{
-			"id":          tour.ID,
-			"name":        tour.Name,
-			"description": tour.Description,
-			"difficulty":  tour.Difficulty,
-			"tags":        tour.Tags,
-			"status":      tour.Status,
-			"price":       tour.Price,
+			"id":              tour.ID,
+			"name":            tour.Name,
+			"description":     tour.Description,
+			"difficulty":      tour.Difficulty,
+			"tags":            tour.Tags,
+			"status":          tour.Status,
+			"price":           tour.Price,
 			"total_length_km": tour.TotalLengthKm,
-			"created_at":  tour.CreatedAt.Format(time.RFC3339),
-			"first_keypoint": firstKeypoint,
+			"created_at":      tour.CreatedAt.Format(time.RFC3339),
+			"first_keypoint":  firstKeypoint,
 		}
 
 		toursData = append(toursData, tourData)

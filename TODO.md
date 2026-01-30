@@ -9,13 +9,7 @@
 - 13. - make the map easily edit peakpoints, always show map when editing peakpoints (in peakpoints tab):
 - 15.
 
-# TOFIX:
+# TODO:
 - fix 16. fix purchasing/reserving tour tours-service needs to communicate with purcase-service (maybe use RPC?)
     - check out: purchases-service/app/api/purchase.py:def add_to_cart
 - 17. finish frontend for TourExecution (backend is done?)
-
-# RPC
-- make tours-service handle auth with stakeholders-service with RPC?
-- make blogs-service handle auth with stakeholders-service with RPC?
-  - currenly we get the JWT token that encodes user id, role, etc
-
