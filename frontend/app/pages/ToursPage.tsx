@@ -107,7 +107,7 @@ export default function ToursPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Dostupne ture 🗺️
             </h1>
-            {isAuthenticated && user?.role.toUpperCase() === "VODIC" && (
+            {isAuthenticated && user?.role.toLowerCase() === "vodic" && (
               <div className="flex gap-2">
                 <Link
                   to="/my-tours"

@@ -200,7 +200,7 @@ export default function FollowersPage() {
   };
 
   // Filter out current user and admin users, then get paginated users
-  const filteredAllUsers = allUsers.filter(u => u.id !== user?.id && u.role !== 'admin');
+  const filteredAllUsers = allUsers.filter(u => u.id !== user?.id && u.role.toLowerCase() !== 'admin');
   const displayedUsers = filteredAllUsers.slice(0, displayedUsersCount);
   const hasMoreUsers = displayedUsersCount < filteredAllUsers.length;
 
