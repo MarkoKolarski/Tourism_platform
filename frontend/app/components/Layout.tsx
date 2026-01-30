@@ -36,39 +36,42 @@ export default function Layout({ children }: LayoutProps) {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link to="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                Početna
+                🏠 Početna
               </Link>
               {isAuthenticated && (
                 <>
                   <Link to="/users" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    Profil
+                    👤 Profil
+                  </Link>
+                  <Link to="/blogs" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                    📖 Blogs
                   </Link>
                   <Link to="/followers" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    Pratioci
+                    🔗 Pratioci
                   </Link>
                   <Link to="/purchase" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                    Kupovina
+                    🛒 Kupovina
                   </Link>
                   <Link to="/simulator" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
                     📍 Simulator
                   </Link>
                   {user?.role.toLowerCase() === "admin" && (
                     <Link to="/admin" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                      Admin
+                      🛠️ Admin
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "turista" && (
                     <Link to="/tourist-tours/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                      Pregled objavljenih tura
+                      🗺️ Ture
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "vodic" && (
                     <>
                     <Link to="/my-tours" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
-                      Moje ture
+                      📝 Moje ture
                     </Link>
                     <Link to="/tours/create" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2">
-                      Kreiraj turu
+                      ✏️ Kreiraj turu
                     </Link>
                     </>
                   )}
@@ -85,7 +88,7 @@ export default function Layout({ children }: LayoutProps) {
                     onClick={handleLogout}
                     className="text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 font-medium"
                   >
-                    Odjavi se
+                    🚪 Odjavi se
                   </button>
                 </div>
               ) : (
@@ -93,7 +96,7 @@ export default function Layout({ children }: LayoutProps) {
                   to="/login"
                   className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600"
                 >
-                  Prijavi se
+                  🔐 Prijavi se
                 </Link>
               )}
             </div>
@@ -121,39 +124,42 @@ export default function Layout({ children }: LayoutProps) {
           <div className="md:hidden border-t border-gray-200 dark:border-gray-700">
             <div className="px-2 pt-2 pb-3 space-y-1">
               <Link to="/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                Početna
+                🏠 Početna
               </Link>
               {isAuthenticated && (
                 <>
                   <Link to="/users" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    Profil
+                    👤 Profil
+                  </Link>
+                  <Link to="/blogs" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    📖 Blogs
                   </Link>
                   <Link to="/followers" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    Pratioci
+                    🔗 Pratioci
                   </Link>
                   <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    Kupovina
+                    🛒 Kupovina
                   </Link>
                   <Link to="/simulator" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     📍 Simulator
                   </Link>
                   {user?.role.toLowerCase() === "admin" && (
                     <Link to="/admin" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                      Admin
+                      🛠️ Admin
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "turista" && (
                     <Link to="/tourist-tours/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                      Pregled objavljenih tura
+                      🗺️ Ture
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "vodic" && (
                     <>
                     <Link to="/my-tours" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                      Moje ture
+                      📝 Moje ture
                     </Link>
                     <Link to="/tours/create" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                      Kreiraj turu
+                      ✏️ Kreiraj turu
                     </Link>
                     </>
                   )}
@@ -169,12 +175,12 @@ export default function Layout({ children }: LayoutProps) {
                     onClick={handleLogout}
                     className="block w-full text-left px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    Odjavi se
+                    🚪 Odjavi se
                   </button>
                 </>
               ) : (
                 <Link to="/login" className="block px-3 py-2 rounded-md text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium">
-                  Prijavi se
+                  🔐 Prijavi se
                 </Link>
               )}
             </div>
