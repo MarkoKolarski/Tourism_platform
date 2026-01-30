@@ -24,8 +24,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	// Public routes (no authentication required)
 	root := router.Group("/")
 	{
-		// Blog routes - public read access
-		root.GET("/blogs", blogHandler.GetAllBlogs)
+		// Blog routes - with optional authentication for filtering
+		root.GET("/blogs", middleware.OptionalAuthMiddleware(), blogHandler.GetAllBlogs)
 		root.GET("/blogs/:id", blogHandler.GetBlogByID)
 		root.GET("/blogs/:id/likes/count", blogHandler.GetLikeCount)
 		root.GET("/blogs/:id/comments", commentHandler.GetCommentsByBlogID)

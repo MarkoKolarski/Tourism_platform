@@ -1,11 +1,14 @@
 package repository
 
 import (
+	"crypto/md5"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	grpcClient "blogs-service/grpc"
 	"blogs-service/models"
 
 	"github.com/google/uuid"
@@ -13,11 +16,27 @@ import (
 )
 
 type BlogRepository struct {
-	db *gorm.DB
+	db              *gorm.DB
+	followersClient *grpcClient.FollowersClient
 }
 
 func NewBlogRepository(db *gorm.DB) *BlogRepository {
-	return &BlogRepository{db: db}
+	followersClient, err := grpcClient.NewFollowersClient()
+	if err != nil {
+		// Log error but continue - service can work in degraded mode
+		println("Warning: Failed to connect to followers service:", err.Error())
+	}
+
+	return &BlogRepository{
+		db:              db,
+		followersClient: followersClient,
+	}
+}
+
+// Helper function to convert integer user ID to UUID
+func intToUUID(userID int) uuid.UUID {
+	hash := md5.Sum([]byte(fmt.Sprintf("user_%d", userID)))
+	return uuid.UUID(hash)
 }
 
 // Create kreira novi blog
@@ -46,7 +65,7 @@ func (r *BlogRepository) GetByID(id uuid.UUID) (*models.Blog, error) {
 }
 
 // GetAll vraća sve blogove sa paginacijom i filterima
-func (r *BlogRepository) GetAll(page, limit, search, userID string) ([]models.Blog, int64, error) {
+func (r *BlogRepository) GetAll(page, limit, search, userID string, requestingUserID int) ([]models.Blog, int64, error) {
 	var blogs []models.Blog
 	var total int64
 
@@ -61,6 +80,25 @@ func (r *BlogRepository) GetAll(page, limit, search, userID string) ([]models.Bl
 	}
 
 	query := r.db.Model(&models.Blog{})
+
+	// If user is authenticated, filter by accessible authors
+	if requestingUserID > 0 && r.followersClient != nil {
+		accessibleAuthors, err := r.followersClient.GetAccessibleBlogs(int32(requestingUserID))
+		if err != nil {
+			// Log error but continue with unfiltered results as fallback
+			println("Warning: Failed to get accessible blogs:", err.Error())
+		} else if len(accessibleAuthors) > 0 {
+			// Convert int32 author IDs to UUIDs
+			accessibleUUIDs := make([]uuid.UUID, len(accessibleAuthors))
+			for i, authorID := range accessibleAuthors {
+				accessibleUUIDs[i] = intToUUID(int(authorID))
+			}
+			query = query.Where("user_id IN ?", accessibleUUIDs)
+		} else {
+			// No accessible authors - return empty result
+			return []models.Blog{}, 0, nil
+		}
+	}
 
 	// Apliciraj filtere
 	if search != "" {

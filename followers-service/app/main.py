@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import neo4j_db
 from app.api.followers import router as followers_router
+import threading
+from app.grpc.followers_grpc import serve as grpc_serve
 
 app = FastAPI(
     title=settings.api_title,
@@ -36,6 +38,11 @@ async def startup_event():
             print("Created unique constraint on User.user_id")
         except Exception as e:
             print(f"Constraint creation info: {e}")
+    
+    # Start gRPC server in separate thread
+    grpc_thread = threading.Thread(target=grpc_serve, daemon=True)
+    grpc_thread.start()
+    print("gRPC server started in background")
 
 
 # Shutdown event - zatvaranje konekcije

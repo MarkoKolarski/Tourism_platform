@@ -41,7 +41,7 @@ export default function CreateBlogPage() {
         .map(img => img.trim())
         .filter(img => img.length > 0);
 
-      const response = await fetch("http://localhost:8004/api/blogs", {
+      const response = await fetch("/api/blogs-service/blogs", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
