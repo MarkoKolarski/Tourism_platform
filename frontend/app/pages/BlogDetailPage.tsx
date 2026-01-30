@@ -338,7 +338,11 @@ export default function BlogDetailPage() {
                       alt={`Blog image ${index + 1}`}
                       className="w-full h-64 object-cover rounded-lg"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x300?text=Image+Not+Available";
+                        const target = e.target as HTMLImageElement;
+                        // Remove the broken image to avoid console spam
+                        target.style.display = 'none';
+                        // Alternatively, replace with a simple colored div
+                        // target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
                       }}
                     />
                   ))}
