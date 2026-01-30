@@ -54,7 +54,7 @@ export default function HomePage() {
       features: [
         "Kreiranje tura (draft/published/archived)",
         "Mapa i ključne tačke",
-        "Računanje dužine ture",
+        "Recenzije i ocene",
         "Različita vremena obilaska"
       ]
     },

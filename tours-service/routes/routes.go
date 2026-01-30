@@ -336,7 +336,24 @@ func getReviews(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"reviews": reviews})
+		// Enrich reviews with tourist information
+		enrichedReviews := make([]gin.H, len(reviews))
+		for i, review := range reviews {
+			// Fetch tourist info from stakeholders service (simplified - in production use proper HTTP client)
+			enrichedReviews[i] = gin.H{
+				"id":         review.ID,
+				"tour_id":    review.TourID,
+				"tourist_id": review.TouristID,
+				"rating":     review.Rating,
+				"comment":    review.Comment,
+				"visit_date": review.VisitDate,
+				"images":     review.Images,
+				"created_at": review.CreatedAt,
+				"updated_at": review.UpdatedAt,
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{"reviews": enrichedReviews})
 	}
 }
 

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import ReviewForm from "../components/ReviewForm";
+import ReviewList from "../components/ReviewList";
 
 interface Tour {
   id: number;
@@ -25,6 +27,8 @@ export default function TourDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const fetchTour = async () => {
     try {
@@ -45,6 +49,18 @@ export default function TourDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to load tour");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`/api/tours-service/tours/${id}/reviews`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
     }
   };
 
@@ -78,8 +94,14 @@ export default function TourDetailPage() {
   useEffect(() => {
     if (id) {
       fetchTour();
+      fetchReviews();
     }
   }, [id]);
+
+  const handleReviewSuccess = () => {
+    setShowReviewForm(false);
+    fetchReviews();
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("sr-RS", {
@@ -160,6 +182,7 @@ export default function TourDetailPage() {
 
   const isOwner = user && tour.author_id === user.id;
   const canEdit = user?.role.toLowerCase() === "vodic" && isOwner;
+  const isAuthenticated = !!token;
 
   return (
     <Layout>
@@ -336,6 +359,31 @@ export default function TourDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Recenzije ({reviews.length})
+            </h2>
+            {isAuthenticated && user?.role.toLowerCase() === "turista" && !isOwner && (
+              <button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {showReviewForm ? "Otkaži" : "Ostavite recenziju"}
+              </button>
+            )}
+          </div>
+
+          {showReviewForm && tour && (
+            <div className="mb-8 bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+              <ReviewForm tourId={tour.id} onSuccess={handleReviewSuccess} />
+            </div>
+          )}
+
+          <ReviewList reviews={reviews} />
         </div>
       </div>
     </Layout>
