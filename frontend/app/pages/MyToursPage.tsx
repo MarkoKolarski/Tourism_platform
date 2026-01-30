@@ -31,7 +31,7 @@ export default function MyToursPage() {
   const [sortBy, setSortBy] = useState<string>("newest");
 
   // Redirect if not VODIC
-  if (user?.role.toUpperCase() !== "VODIC") {
+  if (user?.role.toLowerCase() !== "vodic") {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
