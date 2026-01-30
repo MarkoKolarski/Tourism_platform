@@ -13,12 +13,11 @@
     - check out: purchases-service/app/api/purchase.py:def add_to_cart
 
 # TODO:
-- 13. 
-    - frontend:
-        - select keypoints on map
-        - edit keypoints on map
-        - delete keypoints on map
-        - delete travel_time
+- 13. - make the map easily edit peakpoints, always show map when editing peakpoints (in peakpoints tab):
+    - select keypoints on map
+    - edit keypoints on map
+    - delete keypoints on map
+    - delete travel_time
 
 - 17. finish frontend for TourExecution (backend is done?)
 
