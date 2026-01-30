@@ -193,6 +193,23 @@ export default function ManageTourPage() {
     }
   };
 
+  const handleDeleteTravelTime = async (ttId: number) => {
+    if (!confirm("Da li ste sigurni da želite da obrišete ovo vreme putovanja?")) return;
+
+    try {
+      const response = await fetch(`/api/tours-service/tours/${id}/travel-times/${ttId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (!response.ok) throw new Error("Failed to delete travel time");
+
+      fetchTourData();
+    } catch (err) {
+      alert("Failed to delete travel time");
+    }
+  };
+
   const handlePublish = async () => {
     if (!confirm("Da li ste sigurni da želite da objavite ovu turu?")) return;
 
@@ -553,6 +570,12 @@ export default function ManageTourPage() {
                         {tt.duration_min} minuta
                       </span>
                     </div>
+                    <button
+                      onClick={() => handleDeleteTravelTime(tt.id)}
+                      className="text-red-600 hover:text-red-800 text-xl"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 ))
               )}

@@ -12,10 +12,6 @@
 # TOFIX:
 - fix 16. fix purchasing/reserving tour tours-service needs to communicate with purcase-service (maybe use RPC?)
     - check out: purchases-service/app/api/purchase.py:def add_to_cart
-
-# TODO:
-- delete travel_time
-
 - 17. finish frontend for TourExecution (backend is done?)
 
 # RPC

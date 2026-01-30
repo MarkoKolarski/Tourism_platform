@@ -47,6 +47,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	vodic.PUT("/tours/:id/keypoints/:kpid", updateKeyPoint(db))
 	vodic.DELETE("/tours/:id/keypoints/:kpid", deleteKeyPoint(db))
 	vodic.POST("/tours/:id/travel-times", createTravelTime(db))
+	vodic.DELETE("/tours/:id/travel-times/:ttid", deleteTravelTime(db))
 	vodic.POST("/tours/:id/publish", publishTour(db))
 	vodic.POST("/tours/:id/archive", archiveTour(db))
 }
@@ -476,6 +477,49 @@ func createTravelTime(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusCreated, gin.H{"travel_time": travelTime})
+	}
+}
+
+func deleteTravelTime(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tourID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tour ID"})
+			return
+		}
+		ttID, err := strconv.Atoi(c.Param("ttid"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid travel time ID"})
+			return
+		}
+
+		// Verify tour ownership
+		userIDInterface, _ := c.Get("user_id")
+		var authorID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			authorID = int(v)
+		case string:
+			authorID, _ = strconv.Atoi(v)
+		}
+
+		tour, err := models.GetTourByID(db, tourID)
+		if err != nil || tour.AuthorID != authorID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized"})
+			return
+		}
+
+		err = models.DeleteTravelTime(db, ttID, tourID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Travel time not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete travel time"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Travel time deleted successfully"})
 	}
 }
 
