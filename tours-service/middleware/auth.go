@@ -29,9 +29,7 @@ func NewAuthMiddleware(cfg *config.Config, db *sql.DB) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		log.Printf("[AuthMiddleware] Authorization header: %s", authHeader)
 		if authHeader == "" {
-			log.Println("[AuthMiddleware] Missing Authorization header")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
 			c.Abort()
 			return
@@ -39,7 +37,6 @@ func NewAuthMiddleware(cfg *config.Config, db *sql.DB) gin.HandlerFunc {
 
 		bearerToken := strings.Split(authHeader, " ")
 		if len(bearerToken) != 2 || bearerToken[0] != "Bearer" {
-			log.Printf("[AuthMiddleware] Invalid authorization header format: %v", bearerToken)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
 			c.Abort()
 			return
@@ -56,19 +53,20 @@ func NewAuthMiddleware(cfg *config.Config, db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		var userID interface{}
+		var userIDStr string
 		var email interface{}
 		var username string
 		var role string
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			log.Printf("[AuthMiddleware] JWT claims: %+v", claims)
-
-			// Try to get user_id from "user_id" or "sub"
-			if uid, ok := claims["user_id"]; ok {
-				userID = uid
-			} else if sub, ok := claims["sub"]; ok {
-				userID = sub
+			// Get user_id from "sub" field (now expected as string)
+			if sub, ok := claims["sub"].(string); ok {
+				userIDStr = sub
+			} else {
+				log.Printf("[AuthMiddleware] Invalid or missing 'sub' field in token: %v", claims["sub"])
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user_id in token"})
+				c.Abort()
+				return
 			}
 
 			email = claims["email"]
@@ -83,36 +81,25 @@ func NewAuthMiddleware(cfg *config.Config, db *sql.DB) gin.HandlerFunc {
 			}
 		} else {
 			log.Println("[AuthMiddleware] JWT claims not found or not MapClaims")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			c.Abort()
+			return
 		}
 
 		// If role is missing, fetch from stakeholders DB
-		if role == "" && userID != nil && stakeholdersDB != nil {
-			var userIDInt int
-			switch v := userID.(type) {
-			case float64:
-				userIDInt = int(v)
-			case int:
-				userIDInt = v
-			case string:
-				var err error
-				userIDInt, err = strconv.Atoi(v)
-				if err != nil {
-					log.Printf("[AuthMiddleware] Invalid user_id format: %v", v)
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user_id in token"})
-					c.Abort()
-					return
-				}
-			default:
-				log.Printf("[AuthMiddleware] Unknown user_id type: %T", userID)
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user_id in token"})
+		if role == "" && userIDStr != "" && stakeholdersDB != nil {
+			userIDInt, err := strconv.Atoi(userIDStr)
+			if err != nil {
+				log.Printf("[AuthMiddleware] Invalid user_id format: %s", userIDStr)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user_id format"})
 				c.Abort()
 				return
 			}
 
 			log.Printf("[AuthMiddleware] Fetching role from stakeholders DB for user_id: %d", userIDInt)
-			err := stakeholdersDB.QueryRow("SELECT role FROM users WHERE id = $1", userIDInt).Scan(&role)
+			err = stakeholdersDB.QueryRow("SELECT role FROM users WHERE id = $1", userIDInt).Scan(&role)
 			if err != nil {
-				log.Printf("[AuthMiddleware] Failed to fetch role from DB for user_id %v: %v", userIDInt, err)
+				log.Printf("[AuthMiddleware] Failed to fetch role from DB for user_id %s: %v", userIDStr, err)
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Failed to fetch user role"})
 				c.Abort()
 				return
@@ -120,9 +107,8 @@ func NewAuthMiddleware(cfg *config.Config, db *sql.DB) gin.HandlerFunc {
 			log.Printf("[AuthMiddleware] Role fetched from DB: %s", role)
 		}
 
-		if userID != nil {
-			c.Set("user_id", userID)
-		}
+		// Set context values
+		c.Set("user_id", userIDStr) // Store as string
 		if email != nil {
 			c.Set("email", email)
 		}
@@ -131,8 +117,6 @@ func NewAuthMiddleware(cfg *config.Config, db *sql.DB) gin.HandlerFunc {
 		}
 		if role != "" {
 			c.Set("role", role)
-		} else {
-			log.Println("[AuthMiddleware] Role not found in token or DB")
 		}
 
 		c.Next()

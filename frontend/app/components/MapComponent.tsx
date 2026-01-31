@@ -8,12 +8,20 @@ interface KeyPoint {
   order: number;
 }
 
+interface CompletedKeyPoint {
+  id: number;
+  execution_id: number;
+  key_point_id: number;
+  completed_at: string;
+}
+
 interface MapComponentProps {
   latitude?: number;
   longitude?: number;
   onMapClick: (lat: number, lng: number) => void;
   className?: string;
   keyPoints?: KeyPoint[];
+  completedKeyPoints?: CompletedKeyPoint[]; // Add this prop
   editingKeyPointId?: number | null;
   showUserLocation?: boolean; // true for tourists, false for guides
 }
@@ -24,6 +32,7 @@ export default function MapComponent({
   onMapClick, 
   className = "w-full h-96",
   keyPoints = [],
+  completedKeyPoints = [], // Add this prop
   editingKeyPointId = null,
   showUserLocation = true // Default to showing user location (tourist mode)
 }: MapComponentProps) {
@@ -98,11 +107,12 @@ export default function MapComponent({
 
     const updateContent = async () => {
       const L = await import("leaflet");
+      console.log("Updating map with completed keypoints:", completedKeyPoints);
       updateMapContent(L, mapInstanceRef.current);
     };
 
     updateContent();
-  }, [latitude, longitude, keyPoints, editingKeyPointId, showUserLocation, isClient]);
+  }, [latitude, longitude, keyPoints, completedKeyPoints, editingKeyPointId, showUserLocation, isClient]);
 
   const updateMapContent = async (L: any, map: any) => {
     // Clear existing markers and polyline
@@ -119,18 +129,33 @@ export default function MapComponent({
       polylineRef.current = null;
     }
 
+    // Create a set of completed keypoint IDs for fast lookup
+    const completedIds = new Set(completedKeyPoints.map(ckp => ckp.key_point_id));
+    console.log("Completed keypoint IDs:", Array.from(completedIds));
+
     // ALWAYS SHOW KEYPOINTS if they exist
     if (keyPoints.length > 0) {
       // Add keypoint markers
       keyPoints.forEach(kp => {
         const isEditing = editingKeyPointId === kp.id;
+        const isCompleted = completedIds.has(kp.id);
+        
+        console.log(`Keypoint ${kp.id} (${kp.name}): completed=${isCompleted}`);
+        
+        // Choose color based on completion status
+        let backgroundColor = '#10b981'; // Green for completed
+        if (isEditing) {
+          backgroundColor = '#3b82f6'; // Blue for editing
+        } else if (!isCompleted && showUserLocation) {
+          backgroundColor = '#6b7280'; // Gray for uncompleted (tourist mode)
+        }
         
         const icon = L.divIcon({
           className: 'custom-div-icon',
           html: `<div style="
             width: 30px;
             height: 30px;
-            background-color: ${isEditing ? '#3b82f6' : '#10b981'};
+            background-color: ${backgroundColor};
             color: white;
             border: 3px solid white;
             border-radius: 50%;
@@ -141,7 +166,8 @@ export default function MapComponent({
             font-size: 14px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             ${isEditing ? 'animation: pulse 2s infinite;' : ''}
-          ">${kp.order}</div>
+            ${isCompleted && !isEditing ? 'border-color: #10b981; box-shadow: 0 0 0 2px #10b981;' : ''}
+          ">${isCompleted ? '✓' : kp.order}</div>
           ${isEditing ? `<style>
             @keyframes pulse {
               0%, 100% { transform: scale(1); opacity: 1; }
@@ -152,26 +178,44 @@ export default function MapComponent({
           iconAnchor: [15, 15]
         });
 
+        const statusText = isCompleted ? '<br/><span style="color: green;">✅ Završeno!</span>' : 
+                          isEditing ? '<br/><span style="color: blue;">Uređivanje...</span>' : '';
+
         const marker = L.marker([kp.latitude, kp.longitude], { icon })
-          .bindPopup(`<b>${kp.order}. ${kp.name}</b>${isEditing ? '<br/><span style="color: blue;">Uređivanje...</span>' : ''}`)
+          .bindPopup(`<b>${kp.order}. ${kp.name}</b>${statusText}`)
           .addTo(map);
 
         keyPointMarkersRef.current.push(marker);
       });
 
-      // Draw polyline between keypoints
+      // Draw polyline between keypoints with different styles for completed segments
       if (keyPoints.length > 1) {
         const sortedPoints = [...keyPoints].sort((a, b) => a.order - b.order);
-        const latLngs = sortedPoints.map(kp => [kp.latitude, kp.longitude] as [number, number]);
         
-        const polyline = L.polyline(latLngs, { 
-          color: '#3b82f6', 
-          weight: 3, 
-          opacity: 0.7,
-          dashArray: '10, 5'
-        }).addTo(map);
-        
-        polylineRef.current = polyline;
+        // Draw individual segments with different colors
+        for (let i = 0; i < sortedPoints.length - 1; i++) {
+          const currentPoint = sortedPoints[i];
+          const nextPoint = sortedPoints[i + 1];
+          
+          const isCurrentCompleted = completedIds.has(currentPoint.id);
+          const isNextCompleted = completedIds.has(nextPoint.id);
+          
+          // Segment is green if both points are completed, gray otherwise
+          const segmentColor = (isCurrentCompleted && isNextCompleted) ? '#10b981' : '#94a3b8';
+          const segmentOpacity = (isCurrentCompleted && isNextCompleted) ? 0.8 : 0.5;
+          
+          const segment = L.polyline(
+            [[currentPoint.latitude, currentPoint.longitude], [nextPoint.latitude, nextPoint.longitude]], 
+            { 
+              color: segmentColor,
+              weight: 3,
+              opacity: segmentOpacity,
+              dashArray: (isCurrentCompleted && isNextCompleted) ? undefined : '10, 5'
+            }
+          ).addTo(map);
+          
+          keyPointMarkersRef.current.push(segment); // Add to markers array for cleanup
+        }
       }
 
       // Fit map view to show all keypoints

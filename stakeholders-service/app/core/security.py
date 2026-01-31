@@ -9,7 +9,7 @@ import os
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Use the same JWT secret as blogs-service
-SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key")
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -33,14 +33,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
 
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.algorithm)
     return encoded_jwt
 
 
 def verify_token(token: str) -> Optional[dict]:
     """Verifikuje JWT token i vraća payload"""
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.algorithm])
         return payload
     except JWTError:
         return None

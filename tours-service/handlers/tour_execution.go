@@ -182,34 +182,6 @@ func (h *TourExecutionHandler) GetActiveExecution(c *gin.Context) {
 	})
 }
 
-func (h *TourExecutionHandler) UpdateLocation(c *gin.Context) {
-	executionIDStr := c.Param("execution_id")
-	executionID, err := strconv.Atoi(executionIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid execution ID"})
-		return
-	}
-
-	var req models.UpdateLocationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Update last activity
-	err = models.UpdateLastActivity(h.db, executionID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update location"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":   "Location updated successfully",
-		"latitude":  req.Latitude,
-		"longitude": req.Longitude,
-	})
-}
-
 func (h *TourExecutionHandler) CompleteKeyPoint(c *gin.Context) {
 	executionIDStr := c.Param("execution_id")
 	executionID, err := strconv.Atoi(executionIDStr)

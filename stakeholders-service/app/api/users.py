@@ -175,7 +175,7 @@ async def login(
     # Kreiraj JWT token sa role u payload-u
     access_token = create_access_token(
         data={
-            "sub": user.id,
+            "sub": str(user.id),  # Convert to string for JWT compliance
             "username": user.username,
             "email": user.email,
             "role": user.role.value.upper() if hasattr(user.role, 'value') else str(user.role).upper()
@@ -218,7 +218,7 @@ async def register_user(
     # Kreiraj JWT token sa role u payload-u - automatski login nakon registracije
     access_token = create_access_token(
         data={
-            "sub": new_user.id,
+            "sub": str(new_user.id),  # Convert to string for JWT compliance
             "username": new_user.username,
             "email": new_user.email,
             "role": new_user.role.value.upper() if hasattr(new_user.role, 'value') else str(new_user.role).upper()

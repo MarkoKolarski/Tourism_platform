@@ -81,6 +81,18 @@ func CreateCompletedKeyPointsTable(db *sql.DB) error {
 }
 
 func StartTourExecution(db *sql.DB, tourID int, touristID int, req StartTourRequest) (*TourExecution, error) {
+	// Check if user already has an active tour execution
+	var existingCount int
+	checkQuery := `SELECT COUNT(*) FROM tour_executions WHERE tourist_id = $1 AND status = 'active'`
+	err := db.QueryRow(checkQuery, touristID).Scan(&existingCount)
+	if err != nil {
+		return nil, err
+	}
+
+	if existingCount > 0 {
+		return nil, sql.ErrNoRows // User already has active tour
+	}
+
 	query := `
     INSERT INTO tour_executions (tour_id, tourist_id, start_latitude, start_longitude, status, last_activity)
     VALUES ($1, $2, $3, $4, 'active', CURRENT_TIMESTAMP)
@@ -88,7 +100,7 @@ func StartTourExecution(db *sql.DB, tourID int, touristID int, req StartTourRequ
               last_activity, completed_at, abandoned_at, created_at, updated_at`
 
 	var exec TourExecution
-	err := db.QueryRow(query, tourID, touristID, req.Latitude, req.Longitude).Scan(
+	err = db.QueryRow(query, tourID, touristID, req.Latitude, req.Longitude).Scan(
 		&exec.ID, &exec.TourID, &exec.TouristID, &exec.Status,
 		&exec.StartLatitude, &exec.StartLongitude, &exec.LastActivity,
 		&exec.CompletedAt, &exec.AbandonedAt, &exec.CreatedAt, &exec.UpdatedAt,

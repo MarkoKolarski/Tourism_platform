@@ -70,7 +70,7 @@ export default function ActiveTourPage() {
       });
 
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === 204) {
           navigate("/tourist-tours");
           return;
         }
@@ -83,13 +83,34 @@ export default function ActiveTourPage() {
 
       // Fetch tour details
       if (data.execution?.tour_id) {
-        fetchTourDetails(data.execution.tour_id);
+        await fetchTourDetails(data.execution.tour_id);
       }
     } catch (err) {
       console.error("Error:", err);
       setError(err instanceof Error ? err.message : "Failed to load active tour");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch completed keypoints separately
+  const fetchCompletedKeyPoints = async (executionId: number) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`/api/tours-service/tours/execution/${executionId}/completed-keypoints`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Fetched completed keypoints:", data.completed_keypoints);
+        setCompletedKeyPoints(data.completed_keypoints || []);
+      }
+    } catch (err) {
+      console.error("Error fetching completed keypoints:", err);
     }
   };
 
@@ -120,9 +141,11 @@ export default function ActiveTourPage() {
     if (!user || !token || !execution) return;
 
     try {
-      // 1. Get current location from Position Simulator
-      const locationResponse = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
-        credentials: "include",
+      // Get current location from Position Simulator and update tour if active
+      const locationResponse = await fetch(`/api/tours-service/locations/current`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
 
       if (!locationResponse.ok) {
@@ -140,9 +163,9 @@ export default function ActiveTourPage() {
       const { latitude, longitude } = locationData.current_location;
       setCurrentLocation({ latitude, longitude });
 
-      // 2. Update tour location and check for nearby keypoints
-      const updateResponse = await fetch(`/api/tours-service/tours/execution/${execution.id}/location`, {
-        method: "POST",
+      // Update location (this will automatically check for nearby keypoints if tour is active)
+      const updateResponse = await fetch(`/api/tours-service/locations/current`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -152,12 +175,14 @@ export default function ActiveTourPage() {
 
       if (updateResponse.ok) {
         const updateData = await updateResponse.json();
+        console.log("Location update response:", updateData);
         
+        // Always fetch the latest completed keypoints after location update
+        await fetchCompletedKeyPoints(execution.id);
+        
+        // Check if a keypoint was completed during this location update
         if (updateData.completed && updateData.nearby_keypoint) {
           setNearbyKeyPoint(updateData.nearby_keypoint);
-          
-          // Refresh execution to get updated completed keypoints
-          fetchActiveExecution();
           
           // Clear notification after 5 seconds
           setTimeout(() => setNearbyKeyPoint(null), 5000);
@@ -256,16 +281,18 @@ export default function ActiveTourPage() {
 
   // Handle manual location update from map click
   const handleMapClick = async (lat: number, lng: number) => {
-    if (!user || updatingLocation) return;
+    if (!user || updatingLocation || !execution) return;
 
     try {
       setUpdatingLocation(true);
-      const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
+      
+      // Update position - this will automatically handle tour execution updates
+      const response = await fetch(`/api/tours-service/locations/current`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
-        credentials: "include",
         body: JSON.stringify({
           latitude: parseFloat(lat.toFixed(6)),
           longitude: parseFloat(lng.toFixed(6)),
@@ -274,11 +301,23 @@ export default function ActiveTourPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || "Greška pri ažuriranju lokacije");
+        throw new Error(errorData.error || "Greška pri ažuriranju lokacije");
       }
 
-      // Immediately poll location and update tour
-      await pollLocationAndUpdate();
+      const updateData = await response.json();
+      console.log("Map click location update response:", updateData);
+      setCurrentLocation({ latitude: lat, longitude: lng });
+      
+      // Always fetch the latest completed keypoints after location update
+      await fetchCompletedKeyPoints(execution.id);
+      
+      // Check if a keypoint was completed during this location update
+      if (updateData.completed && updateData.nearby_keypoint) {
+        setNearbyKeyPoint(updateData.nearby_keypoint);
+        
+        // Clear notification after 5 seconds
+        setTimeout(() => setNearbyKeyPoint(null), 5000);
+      }
       
     } catch (error) {
       console.error("Greška pri postavljanju lokacije:", error);
@@ -425,6 +464,7 @@ export default function ActiveTourPage() {
                     longitude: kp.longitude,
                     order: kp.order
                   }))}
+                  completedKeyPoints={completedKeyPoints}
                   showUserLocation={true}
                 />
               </div>
@@ -437,8 +477,10 @@ export default function ActiveTourPage() {
                   )}
                   <li>• Kliknite bilo gde na mapi da postavite novu poziciju</li>
                   <li>• 🔴 Crvena tačka = Vaša trenutna pozicija</li>
-                  <li>• 🔵 Plave tačke = Neposećene ključne tačke</li>
-                  <li>• 🟢 Zelene tačke = Posećene ključne tačke</li>
+                  <li>• 🟢 Zelene tačke = Završene ključne tačke</li>
+                  <li>• 🔘 Sive tačke = Neposećene ključne tačke</li>
+                  <li>• 🟢 Zelene linije = Završeni segmenti rute</li>
+                  <li>• ⚪ Sive linije = Neprošani segmenti rute</li>
                 </ul>
               </div>
             </div>

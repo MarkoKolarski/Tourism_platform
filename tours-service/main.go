@@ -6,6 +6,7 @@ import (
 	"tours-service/config"
 	"tours-service/database"
 	"tours-service/grpc"
+	"tours-service/models"
 	"tours-service/routes"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,35 @@ func main() {
 	// Initialize database
 	db := database.InitDB(cfg)
 	defer db.Close()
+
+	// Initialize database tables
+	if err := models.CreateToursTable(db); err != nil {
+		log.Fatalf("Error creating tours table: %v", err)
+	}
+
+	if err := models.CreateKeyPointsTable(db); err != nil {
+		log.Fatalf("Error creating key points table: %v", err)
+	}
+
+	if err := models.CreateReviewsTable(db); err != nil {
+		log.Fatalf("Error creating reviews table: %v", err)
+	}
+
+	if err := models.CreateTravelTimesTable(db); err != nil {
+		log.Fatalf("Error creating travel times table: %v", err)
+	}
+
+	if err := models.CreateTourExecutionsTable(db); err != nil {
+		log.Fatalf("Error creating tour executions table: %v", err)
+	}
+
+	if err := models.CreateCompletedKeyPointsTable(db); err != nil {
+		log.Fatalf("Error creating completed key points table: %v", err)
+	}
+
+	if err := models.CreateCurrentLocationsTable(db); err != nil {
+		log.Fatalf("Error creating current locations table: %v", err)
+	}
 
 	// Initialize gRPC client for purchases service
 	log.Printf("[gRPC] Connecting to Purchases service at %s", cfg.PurchasesGRPCAddr)

@@ -184,8 +184,8 @@ export default function TourDetailPage() {
           }
         });
         
-        // 404 or any error means no active tour
-        if (response.status === 404 || !response.ok) {
+        // 204 means no active tour
+        if (response.status === 204 || !response.ok) {
           setHasActiveTour(false);
           return;
         }
@@ -222,8 +222,10 @@ export default function TourDetailPage() {
       setStartingTour(true);
 
       // First, get current location from Position Simulator
-      const locationResponse = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
-        credentials: "include",
+      const locationResponse = await fetch(`/api/tours-service/locations/current`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
 
       if (!locationResponse.ok) {
@@ -448,6 +450,7 @@ export default function TourDetailPage() {
                     longitude: kp.longitude,
                     order: kp.order
                   }))}
+                  completedKeyPoints={[]} // Empty array for tour detail view
                   showUserLocation={!!userLocation}
                 />
               </div>

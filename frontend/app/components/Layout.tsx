@@ -27,8 +27,8 @@ export default function Layout({ children }: LayoutProps) {
           }
         });
         
-        // 404 or any error status means no active tour
-        if (response.status === 404 || !response.ok) {
+        // 204 or any error status means no active tour
+        if (response.status === 204 || !response.ok) {
           setHasActiveTour(false);
           return;
         }

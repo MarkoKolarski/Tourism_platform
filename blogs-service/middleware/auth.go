@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,8 +11,8 @@ import (
 )
 
 type Claims struct {
-	Sub      interface{} `json:"sub"` // Can be int or string
-	Username string      `json:"username"`
+	Sub      string `json:"sub"` // Now expect string directly
+	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -58,25 +57,14 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Extract user ID - handle both int and string formats
-		var userIDStr string
-		switch v := claims.Sub.(type) {
-		case float64:
-			userIDStr = strconv.FormatInt(int64(v), 10)
-		case int:
-			userIDStr = strconv.Itoa(v)
-		case int64:
-			userIDStr = strconv.FormatInt(v, 10)
-		case string:
-			userIDStr = v
-		default:
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID format in token"})
+		if claims.Sub == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
 			c.Abort()
 			return
 		}
 
 		// Store user information in context
-		c.Set("userID", userIDStr)
+		c.Set("userID", claims.Sub) // Now stored as string
 		c.Set("userName", claims.Username)
 
 		c.Next()
@@ -110,23 +98,8 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err == nil && token.Valid {
-			if claims, ok := token.Claims.(*Claims); ok {
-				// Extract user ID - handle both int and string formats
-				var userIDStr string
-				switch v := claims.Sub.(type) {
-				case float64:
-					userIDStr = strconv.FormatInt(int64(v), 10)
-				case int:
-					userIDStr = strconv.Itoa(v)
-				case int64:
-					userIDStr = strconv.FormatInt(v, 10)
-				case string:
-					userIDStr = v
-				}
-
-				if userIDStr != "" {
-					c.Set("userID", userIDStr)
-				}
+			if claims, ok := token.Claims.(*Claims); ok && claims.Sub != "" {
+				c.Set("userID", claims.Sub)
 				if claims.Username != "" {
 					c.Set("userName", claims.Username)
 				}

@@ -35,22 +35,41 @@ def get_current_user_id(authorization: str = Header(None)) -> int:
     Frontend ima zaštitu - svi moraju biti ulogovani da pristupe Purchase stranici
     """
     if not authorization or not authorization.startswith("Bearer "):
-        # Bez tokena, koristi default user ID za testiranje
-        return 1
-    
+        logging.warning("[AUTH] Missing/invalid Authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header"
+        )
+
     token = authorization.replace("Bearer ", "")
+    logging.info(f"[AUTH] Attempting to decode JWT token")
+
     payload = decode_access_token(token)
-    
     if not payload:
-        # Invalid token, ali dozvoli pristup sa default user
-        return 1
-    
-    # JWT token ima 'sub' field koji sadrži user ID
-    user_id = payload.get("sub")
-    if not user_id:
-        return 1
-    
-    return int(user_id)
+        logging.warning("[AUTH] Invalid token payload")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        logging.warning(f"[AUTH] 'sub' missing in token payload: {payload}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token structure"
+        )
+
+    try:
+        user_id = int(user_id_str)
+        logging.info(f"[AUTH] Successfully authenticated user_id: {user_id}")
+        return user_id
+    except ValueError:
+        logging.error(f"[AUTH] Invalid user_id format: {user_id_str}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID format"
+        )
 
 
 # ========== Shopping Cart Endpoints ==========
@@ -303,40 +322,6 @@ def get_token(
         )
     
     return token
-
-
-@router.get("/tokens/verify")
-def verify_tour_purchase(
-    user_id: int,
-    tour_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    Verify if a user has purchased a specific tour
-    Used by Tours Service to check if user can start a tour
-    
-    Returns 200 if user has active token for this tour
-    Returns 404 if user hasn't purchased this tour
-    """
-    token = db.query(TourPurchaseToken).filter(
-        and_(
-            TourPurchaseToken.user_id == user_id,
-            TourPurchaseToken.tour_id == tour_id,
-            TourPurchaseToken.is_active == OrderStatus.COMPLETED
-        )
-    ).first()
-    
-    if token:
-        return {
-            "has_purchased": True,
-            "token_id": token.id,
-            "purchased_at": token.purchased_at.isoformat()
-        }
-    
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="User has not purchased this tour"
-    )
 
 
 # ========== SAGA Transaction Endpoints (Admin/Debug) ==========

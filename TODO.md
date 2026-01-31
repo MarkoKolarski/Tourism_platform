@@ -8,7 +8,7 @@
 - 12. tourist can make a review for a tour (rating: 1-5, comment, user info, tour attendance date, review date)
 - 13. - make the map easily edit peakpoints, always show map when editing peakpoints (in peakpoints tab):
 - 15.
+- 17. tour-service needs to do RPC with purchase-service to check if tour is bought
 
 # TODO:
-- 17. tour-service needs to do RPC with purchase-service to check if tour is bought
-    - tourist can only start tours they bought
+fix 17. simulator position needs to be gotten from stakeholders-service - tourist can only start tours they bought

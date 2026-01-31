@@ -251,17 +251,12 @@ export default function ManageTourPage() {
       id: kp.id,
       name: kp.name,
       description: kp.description,
-      latitude: kp.latitude.toString(),
-      longitude: kp.longitude.toString(),
+      latitude: kp.latitude.toFixed(6),
+      longitude: kp.longitude.toFixed(6),
       image_url: kp.image_url,
       order: kp.order.toString()
     });
     setShowKPForm(true);
-    setKpForm({
-      ...kpForm,
-      latitude: kp.latitude.toFixed(6),
-      longitude: kp.longitude.toFixed(6)
-    });
   };
 
   const cancelEdit = () => {
@@ -398,11 +393,12 @@ export default function ManageTourPage() {
                       className="px-4 py-2 border rounded-lg dark:bg-gray-700"
                     />
                     <input
-                      type="text"
+                      type="number"
                       placeholder="Redni broj"
                       value={kpForm.order}
-                      readOnly
-                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                      onChange={(e) => !editingKeyPoint && setKpForm({ ...kpForm, order: e.target.value })}
+                      readOnly={!!editingKeyPoint}
+                      className={`px-4 py-2 border rounded-lg dark:bg-gray-700 ${editingKeyPoint ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''}`}
                     />
                     <input
                       type="text"
@@ -410,7 +406,7 @@ export default function ManageTourPage() {
                       required
                       readOnly
                       value={kpForm.latitude}
-                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
                     />
                     <input
                       type="text"
@@ -418,7 +414,7 @@ export default function ManageTourPage() {
                       required
                       readOnly
                       value={kpForm.longitude}
-                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
                     />
                     <input
                       type="text"

@@ -3,6 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
+import logging
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -27,7 +28,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.algorithm)
     
     return encoded_jwt
 
@@ -35,7 +36,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def decode_access_token(token: str) -> Optional[dict]:
     """Dekodiranje JWT tokena"""
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        logging.debug(f"[JWT] Decoding token with secret: {settings.jwt_secret[:10]}...")
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.algorithm])
+        logging.debug(f"[JWT] Successfully decoded payload: {payload}")
         return payload
-    except JWTError:
+    except JWTError as e:
+        logging.error(f"[JWT] Token decode error: {str(e)}")
+        return None
+    except Exception as e:
+        logging.error(f"[JWT] Unexpected error decoding token: {str(e)}")
         return None
