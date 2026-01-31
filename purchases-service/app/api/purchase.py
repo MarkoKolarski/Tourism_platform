@@ -220,12 +220,14 @@ async def checkout(
     
     **SAGA koraci:**
     1. Validacija korisnika (Stakeholders Service)
-    2. Rezervacija tura (Tours Service)
+    2. Rezervacija tura (Tours Service) - verifikacija da ture postoje i dostupne su
     3. Procesiranje plaćanja (Payment Service)
     4. Generisanje purchase tokena
     5. Ažuriranje statistike korisnika
     
     Ako bilo koji korak ne uspe, automatski se pokreće kompenzacija (rollback).
+    
+    **Napomena:** Ako checkout ne uspe, možete pokušati ponovo. Cart će biti resetovan u PENDING status.
     
     **Vraća:**
     - `transaction_id`: ID SAGA transakcije
@@ -241,9 +243,16 @@ async def checkout(
     )
     
     if not success:
+        # Provide more helpful error message
+        error_detail = error or "Unknown error occurred"
+        
+        # Add suggestion to check tour availability
+        if "reservation failed" in error.lower() or "not available" in error.lower():
+            error_detail += ". Molimo proverite da li su sve ture u korpi još uvek dostupne i objavljene."
+        
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Checkout failed: {error}"
+            detail=f"Checkout failed: {error_detail}"
         )
     
     # Kalkulacija ukupne cene

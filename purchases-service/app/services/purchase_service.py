@@ -186,6 +186,11 @@ class PurchaseService:
         if not cart:
             return False, None, None, "Cart not found"
         
+        # Allow retry if cart is in FAILED status by resetting it to PENDING
+        if cart.status == OrderStatus.FAILED:
+            cart.status = OrderStatus.PENDING
+            self.db.commit()
+        
         if cart.status != OrderStatus.PENDING:
             return False, None, None, f"Cart already processed (status: {cart.status})"
         

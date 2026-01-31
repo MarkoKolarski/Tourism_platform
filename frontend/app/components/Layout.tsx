@@ -27,13 +27,23 @@ export default function Layout({ children }: LayoutProps) {
           }
         });
         
-        // 204 means no active tour
-        if (response.status === 204) {
+        // 404 or any error status means no active tour
+        if (response.status === 404 || !response.ok) {
           setHasActiveTour(false);
           return;
         }
         
-        setHasActiveTour(response.ok);
+        // Only set true if we get a 200 OK with valid data
+        if (response.ok) {
+          try {
+            const data = await response.json();
+            setHasActiveTour(!!data.execution);
+          } catch (e) {
+            setHasActiveTour(false);
+          }
+        } else {
+          setHasActiveTour(false);
+        }
       } catch (error) {
         console.error("Error checking active tour:", error);
         setHasActiveTour(false);

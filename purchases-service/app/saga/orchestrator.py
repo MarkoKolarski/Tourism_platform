@@ -218,29 +218,71 @@ class SagaOrchestrator:
     async def _reserve_tours(self, tour_ids: List[int], user_id: int) -> bool:
         """
         KORAK 2: Rezervacija tura u Tours servisu
-        Verifikacija preko gRPC da ture postoje i da su published
+        Verifikacija preko gRPC ili HTTP da ture postoje i da su published
         """
         try:
-            # Verify each tour exists via gRPC
+            # Try gRPC first
+            all_verified = True
             for tour_id in tour_ids:
                 exists, tour_data, error = self.tours_grpc_client.verify_tour_exists(tour_id)
                 
-                if not exists:
-                    print(f"Tour {tour_id} verification failed: {error}")
-                    return False
-                
-                if not tour_data.get("is_published"):
-                    print(f"Tour {tour_id} is not published")
-                    return False
-                
-                print(f"✓ Tour {tour_id} verified: {tour_data['name']}")
+                if exists and tour_data:
+                    if not tour_data.get("is_published"):
+                        print(f"Tour {tour_id} is not published")
+                        all_verified = False
+                        break
+                    print(f"✓ Tour {tour_id} verified via gRPC: {tour_data.get('name')}")
+                else:
+                    # Fallback to HTTP verification
+                    print(f"gRPC verification failed for tour {tour_id}, trying HTTP: {error}")
+                    verified_http = await self._verify_tour_via_http(tour_id)
+                    if not verified_http:
+                        all_verified = False
+                        break
             
-            # All tours verified successfully
-            return True
+            return all_verified
             
         except Exception as e:
-            print(f"Error verifying tours via gRPC: {e}")
+            print(f"Error verifying tours: {e}")
+            # Try HTTP fallback for all tours
+            return await self._verify_all_tours_via_http(tour_ids)
+    
+    async def _verify_tour_via_http(self, tour_id: int) -> bool:
+        """Verify single tour via HTTP"""
+        try:
+            import httpx
+            from app.core.config import settings
+            
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(
+                    f"{settings.tours_service_url}/tours/{tour_id}"
+                )
+                
+                if response.status_code == 200:
+                    tour_json = response.json()
+                    tour = tour_json.get("tour", {})
+                    status = tour.get("status", "")
+                    
+                    if status in ["published", "archived"]:
+                        print(f"✓ Tour {tour_id} verified via HTTP: {tour.get('name')}")
+                        return True
+                    else:
+                        print(f"Tour {tour_id} status is '{status}', not available")
+                        return False
+                else:
+                    print(f"HTTP verification failed for tour {tour_id}: {response.status_code}")
+                    return False
+                    
+        except Exception as e:
+            print(f"Error verifying tour {tour_id} via HTTP: {e}")
             return False
+    
+    async def _verify_all_tours_via_http(self, tour_ids: List[int]) -> bool:
+        """Verify all tours via HTTP as fallback"""
+        for tour_id in tour_ids:
+            if not await self._verify_tour_via_http(tour_id):
+                return False
+        return True
     
     async def _process_payment(
         self, 

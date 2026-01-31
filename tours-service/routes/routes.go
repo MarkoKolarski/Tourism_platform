@@ -673,10 +673,25 @@ func getActiveTourExecution(db *sql.DB) gin.HandlerFunc {
 		execution, err := models.GetActiveTourExecution(db, touristID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				c.JSON(http.StatusNoContent, gin.H{"error": "No active tour execution"})
+				// Return 404 with JSON instead of 204
+				c.JSON(http.StatusNotFound, gin.H{"error": "No active tour execution"})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch execution"})
+			return
+		}
+
+		// Get tour details
+		tour, err := models.GetTourByID(db, execution.TourID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tour details"})
+			return
+		}
+
+		// Get key points for the tour
+		keyPoints, err := models.GetKeyPointsByTourID(db, execution.TourID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch key points"})
 			return
 		}
 
@@ -685,6 +700,8 @@ func getActiveTourExecution(db *sql.DB) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"execution":           execution,
+			"tour":                tour,
+			"keypoints":           keyPoints,
 			"completed_keypoints": completed,
 		})
 	}

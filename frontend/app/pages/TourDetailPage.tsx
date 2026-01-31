@@ -184,9 +184,26 @@ export default function TourDetailPage() {
           }
         });
         
-        setHasActiveTour(response.ok);
+        // 404 or any error means no active tour
+        if (response.status === 404 || !response.ok) {
+          setHasActiveTour(false);
+          return;
+        }
+        
+        // Only set true if we successfully get data
+        if (response.ok) {
+          try {
+            const data = await response.json();
+            setHasActiveTour(!!data.execution);
+          } catch (e) {
+            setHasActiveTour(false);
+          }
+        } else {
+          setHasActiveTour(false);
+        }
       } catch (error) {
         console.error("Error checking active tour:", error);
+        setHasActiveTour(false);
       }
     };
 
