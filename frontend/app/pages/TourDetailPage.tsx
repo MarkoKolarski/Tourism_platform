@@ -124,6 +124,13 @@ export default function TourDetailPage() {
   const handleAddToCart = async () => {
     if (!token || !user || !tour) return;
 
+    // Check if tour has a valid price
+    if (!tour.price || tour.price <= 0) {
+      setCartMessage("Ova tura nema definisanu cenu i ne može se dodati u korpu");
+      setTimeout(() => setCartMessage(null), 5000);
+      return;
+    }
+
     try {
       setAddingToCart(true);
       setCartMessage(null);
@@ -261,7 +268,20 @@ export default function TourDetailPage() {
       case 1: return "Lako";
       case 2: return "Srednje";
       case 3: return "Teško";
+      case 4: return "Vrlo teško";
+      case 5: return "Ekstremno";
       default: return "Nepoznato";
+    }
+  };
+
+  const getDifficultyColor = (difficulty: number) => {
+    switch(difficulty) {
+      case 1: return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+      case 2: return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+      case 3: return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200";
+      case 4: return "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200";
+      case 5: return "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200";
+      default: return "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200";
     }
   };
 
@@ -482,14 +502,20 @@ export default function TourDetailPage() {
               
               {user?.role.toLowerCase() === "turista" && (tour.status === "published" || tour.status === "archived") && (
                 <div className="space-y-3">
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={addingToCart}
-                    className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {addingToCart ? "Dodavanje..." : "🛒 Dodaj u korpu"}
-                  </button>
+                  {/* Add to Cart Button - disabled if no price */}
+                  {tour.price && tour.price > 0 ? (
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={addingToCart}
+                      className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {addingToCart ? "Dodavanje..." : "🛒 Dodaj u korpu"}
+                    </button>
+                  ) : (
+                    <div className="w-full bg-gray-300 text-gray-600 py-3 px-6 rounded-lg text-center font-medium cursor-not-allowed">
+                      Cena nije definisana
+                    </div>
+                  )}
 
                   {/* View Cart Link */}
                   <Link
@@ -538,7 +564,9 @@ export default function TourDetailPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-gray-600 dark:text-gray-400">Težina</span>
-                  <span className="font-medium">{getDifficultyLabel(tour.difficulty)}</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(tour.difficulty)}`}>
+                    {getDifficultyLabel(tour.difficulty)}
+                  </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">

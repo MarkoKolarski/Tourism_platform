@@ -21,5 +21,8 @@
 
 # mini fixes
 - make tour name clickable navigate to tour
+- fix map goes over Layout navbar in TourDetails, Simulator pages
 - review: use current date for default datetime
 - center tour map to see all peakpoints
+- tour name in cart should be fetched
+- fix VODIC's MyTours buttons make css pretty for each tour

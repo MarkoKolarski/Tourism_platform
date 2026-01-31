@@ -89,10 +89,6 @@ export default function Layout({ children }: LayoutProps) {
                     <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🔗</span>
                     <span className="text-xs font-medium">Pratioci</span>
                   </Link>
-                  <Link to="/purchase" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
-                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛒</span>
-                    <span className="text-xs font-medium">Kupovina</span>
-                  </Link>
                   <Link to="/simulator" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
                     <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📍</span>
                     <span className="text-xs font-medium">Simulator</span>
@@ -115,11 +111,9 @@ export default function Layout({ children }: LayoutProps) {
                         <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🗺️</span>
                         <span className="text-xs font-medium">Ture</span>
                       </Link>
-                      <Link 
-                        to="/purchase" 
-                        className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        🛒 Korpa
+                      <Link to="/purchase" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                        <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛒</span>
+                        <span className="text-xs font-medium">Korpa</span>
                       </Link>
                     </>
                   )}
@@ -201,9 +195,6 @@ export default function Layout({ children }: LayoutProps) {
                   <Link to="/followers" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     🔗 Pratioci
                   </Link>
-                  <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    🛒 Kupovina
-                  </Link>
                   <Link to="/simulator" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     📍 Simulator
                   </Link>
@@ -222,10 +213,7 @@ export default function Layout({ children }: LayoutProps) {
                       <Link to="/tourist-tours/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                         🗺️ Ture
                       </Link>
-                      <Link 
-                        to="/purchase" 
-                        className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      >
+                      <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                         🛒 Korpa
                       </Link>
                     </>

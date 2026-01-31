@@ -88,9 +88,38 @@ export default function TouristTourPage() {
     return "★".repeat(difficulty) + "☆".repeat(5 - difficulty);
   };
 
+  const getDifficultyLabel = (difficulty: number) => {
+    switch(difficulty) {
+      case 1: return "Lako";
+      case 2: return "Srednje";
+      case 3: return "Teško";
+      case 4: return "Vrlo teško";
+      case 5: return "Ekstremno";
+      default: return "Nepoznato";
+    }
+  };
+
+  const getDifficultyColor = (difficulty: number) => {
+    switch(difficulty) {
+      case 1: return "text-green-500";
+      case 2: return "text-blue-500";
+      case 3: return "text-yellow-500";
+      case 4: return "text-orange-500";
+      case 5: return "text-red-500";
+      default: return "text-gray-500";
+    }
+  };
+
   const handleAddToCart = async (tour: Tour) => {
     if (!token || !user) {
       setCartMessage({ tourId: tour.id, message: "Morate biti prijavljeni" });
+      setTimeout(() => setCartMessage(null), 3000);
+      return;
+    }
+
+    // Check if tour has a valid price
+    if (!tour.price || tour.price <= 0) {
+      setCartMessage({ tourId: tour.id, message: "Tura nema definisanu cenu" });
       setTimeout(() => setCartMessage(null), 3000);
       return;
     }
@@ -195,11 +224,11 @@ export default function TouristTourPage() {
                 className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700"
               >
                 <option value="">Sve težine</option>
-                <option value="1">★☆☆☆☆ Lako</option>
-                <option value="2">★★☆☆☆ Umereno</option>
-                <option value="3">★★★☆☆ Srednje</option>
-                <option value="4">★★★★☆ Teško</option>
-                <option value="5">★★★★★ Vrlo teško</option>
+                <option value="1">⭐ Lako</option>
+                <option value="2">⭐⭐ Srednje</option>
+                <option value="3">⭐⭐⭐ Teško</option>
+                <option value="4">⭐⭐⭐⭐ Vrlo teško</option>
+                <option value="5">⭐⭐⭐⭐⭐ Ekstremno</option>
               </select>
             </div>
 
@@ -302,19 +331,15 @@ export default function TouristTourPage() {
                   {/* Težina */}
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-yellow-500">
+                      <span className={`${getDifficultyColor(tour.difficulty)}`}>
                         {renderDifficulty(tour.difficulty)}
                       </span>
                       <span className="text-sm text-gray-500">
                         {tour.difficulty}/5
                       </span>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      Težina:{" "}
-                      {tour.difficulty === 1 ? "Lako" :
-                       tour.difficulty === 2 ? "Umereno" :
-                       tour.difficulty === 3 ? "Srednje" :
-                       tour.difficulty === 4 ? "Teško" : "Vrlo teško"}
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {getDifficultyLabel(tour.difficulty)}
                     </div>
                   </div>
 
@@ -358,13 +383,18 @@ export default function TouristTourPage() {
                     </div>
                   )}
 
-                  {/* Actions */}
+                  {/* Actions - update button to show disabled state for tours with no price */}
                   <div className="flex justify-between items-center mt-4 pt-4 border-t gap-2">
                     {user?.role.toLowerCase() === "turista" && (
                       <button
                         onClick={() => handleAddToCart(tour)}
-                        disabled={addingToCart === tour.id}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50"
+                        disabled={addingToCart === tour.id || !tour.price || tour.price <= 0}
+                        title={!tour.price || tour.price <= 0 ? "Tura nema definisanu cenu" : "Dodaj u korpu"}
+                        className={`px-3 py-2 rounded-lg transition-colors text-sm disabled:opacity-50 ${
+                          !tour.price || tour.price <= 0
+                            ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                            : "bg-purple-600 text-white hover:bg-purple-700"
+                        }`}
                       >
                         {addingToCart === tour.id ? "..." : "🛒"}
                       </button>
