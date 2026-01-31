@@ -10,7 +10,7 @@ export default function ReviewForm({ tourId, onSuccess }: ReviewFormProps) {
   const { token } = useAuth();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [visitDate, setVisitDate] = useState("");
+  const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
   const [images, setImages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);

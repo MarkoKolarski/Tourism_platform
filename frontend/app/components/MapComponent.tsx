@@ -174,11 +174,21 @@ export default function MapComponent({
         polylineRef.current = polyline;
       }
 
-      // If editing a keypoint in guide mode, center on it
+      // Fit map view to show all keypoints
+      const latLngs = keyPoints.map(kp => [kp.latitude, kp.longitude] as [number, number]);
+      const bounds = L.latLngBounds(latLngs);
+      map.fitBounds(bounds, { 
+        padding: [20, 20],
+        maxZoom: keyPoints.length === 1 ? 15 : undefined // Don't zoom too much for single point
+      });
+
+      // If editing a specific keypoint, still center on it after fitting bounds
       if (editingKeyPointId && !showUserLocation) {
         const editingKp = keyPoints.find(kp => kp.id === editingKeyPointId);
         if (editingKp) {
-          map.setView([editingKp.latitude, editingKp.longitude], map.getZoom());
+          setTimeout(() => {
+            map.setView([editingKp.latitude, editingKp.longitude], Math.max(map.getZoom(), 15));
+          }, 100);
         }
       }
     }
@@ -210,8 +220,18 @@ export default function MapComponent({
         .bindPopup('<b>Vaša lokacija</b>')
         .addTo(map);
 
-      // Pan to user location
-      map.panTo([latitude, longitude]);
+      // If there are keypoints, include user location in bounds
+      if (keyPoints.length > 0) {
+        const allLatLngs = [
+          ...keyPoints.map(kp => [kp.latitude, kp.longitude] as [number, number]),
+          [latitude, longitude] as [number, number]
+        ];
+        const bounds = L.latLngBounds(allLatLngs);
+        map.fitBounds(bounds, { padding: [20, 20] });
+      } else {
+        // Pan to user location if no keypoints
+        map.panTo([latitude, longitude]);
+      }
     }
 
     // GUIDE MODE - Show default marker for new keypoint selection (not editing existing)
@@ -241,7 +261,11 @@ export default function MapComponent({
 
   return (
     <div className={className}>
-      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      <div 
+        ref={mapRef} 
+        className="w-full h-full rounded-lg relative" 
+        style={{ zIndex: 1 }}
+      />
     </div>
   );
 }

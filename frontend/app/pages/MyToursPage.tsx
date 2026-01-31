@@ -3,6 +3,16 @@ import { Link, useNavigate } from "react-router";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
 
+interface KeyPoint {
+  id: number;
+  name: string;
+  description: string;
+  latitude: number;
+  longitude: number;
+  image_url: string;
+  order: number;
+}
+
 interface Tour {
   id: number;
   name: string;
@@ -15,6 +25,7 @@ interface Tour {
   author_id: number;
   created_at: string;
   updated_at: string;
+  keypoints?: KeyPoint[];
 }
 
 export default function MyToursPage() {
@@ -53,8 +64,23 @@ export default function MyToursPage() {
       }
 
       const data = await response.json();
-      setTours(data.tours || []);
-      setFilteredTours(data.tours || []);
+      const toursWithKeypoints = await Promise.all(
+        (data.tours || []).map(async (tour: Tour) => {
+          try {
+            const kpResponse = await fetch(`/api/tours-service/tours/${tour.id}/keypoints`);
+            if (kpResponse.ok) {
+              const kpData = await kpResponse.json();
+              return { ...tour, keypoints: kpData.keypoints || [] };
+            }
+          } catch (err) {
+            console.error(`Failed to fetch keypoints for tour ${tour.id}:`, err);
+          }
+          return { ...tour, keypoints: [] };
+        })
+      );
+      
+      setTours(toursWithKeypoints);
+      setFilteredTours(toursWithKeypoints);
     } catch (err) {
       console.error("Error fetching tours:", err);
       setError("Failed to load your tours");
@@ -356,7 +382,7 @@ export default function MyToursPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-6">
+          <div className="space-y-6">
             <div className="text-gray-600 dark:text-gray-400 text-sm">
               Prikazano {filteredTours.length} od {tours.length} tura
             </div>
@@ -364,87 +390,153 @@ export default function MyToursPage() {
             {filteredTours.map((tour) => (
               <div
                 key={tour.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
               >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                          {tour.name}
-                        </h3>
-                        {getStatusBadge(tour.status)}
+                <div className="flex flex-col lg:flex-row">
+                  {/* Large tour image - left side */}
+                  <div className="lg:w-72 lg:flex-shrink-0">
+                    {tour.keypoints?.[0]?.image_url ? (
+                      <img 
+                        src={tour.keypoints[0].image_url} 
+                        alt={tour.keypoints[0].name}
+                        className="w-full h-48 lg:h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-48 lg:h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {tour.description}
-                      </p>
+                    )}
+                  </div>
+
+                  {/* Content - right side */}
+                  <div className="flex-1 p-6">
+                    {/* Header with title and status */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <Link
+                          to={`/tours/${tour.id}`}
+                          className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors block mb-2"
+                        >
+                          {tour.name} →
+                        </Link>
+                        <div className="flex items-center gap-3">
+                          {getStatusBadge(tour.status)}
+                          <span className="text-sm text-gray-500 dark:text-gray-400">ID: {tour.id}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 ml-4">
+
+                    {/* Description */}
+                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                      {tour.description}
+                    </p>
+
+                    {/* Tour stats grid */}
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">
+                          {getDifficultyLabel(tour.difficulty)}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Težina</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">
+                          {tour.total_length_km.toFixed(1)} km
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Dužina</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">
+                          {tour.price.toFixed(0)} RSD
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Cena</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">
+                          {tour.keypoints?.length || 0}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Tačke</div>
+                      </div>
+                    </div>
+
+                    {/* Keypoints preview - horizontal scroll */}
+                    {tour.keypoints && tour.keypoints.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                          Ključne tačke:
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {tour.keypoints.slice(0, 5).map((kp) => (
+                            <div key={kp.id} className="flex-shrink-0 flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs">
+                                {kp.order}
+                              </div>
+                              {kp.image_url && (
+                                <img 
+                                  src={kp.image_url} 
+                                  alt={kp.name}
+                                  className="w-10 h-10 rounded object-cover"
+                                />
+                              )}
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                {kp.name}
+                              </span>
+                            </div>
+                          ))}
+                          {tour.keypoints.length > 5 && (
+                            <div className="flex-shrink-0 flex items-center px-3 text-sm text-gray-500 dark:text-gray-400">
+                              +{tour.keypoints.length - 5}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {tour.tags && tour.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {tour.tags.slice(0, 5).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                        {tour.tags.length > 5 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
+                            +{tour.tags.length - 5}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <Link
                         to={`/tours/manage/${tour.id}`}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-1"
                       >
-                        Upravljaj →
+                        ⚙️ Upravljaj
+                      </Link>
+                      <Link
+                        to={`/tours/edit/${tour.id}`}
+                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium flex items-center gap-1"
+                      >
+                        ✏️ Uredi
                       </Link>
                       <button
                         onClick={() => handleDelete(tour.id)}
                         disabled={deleteLoading === tour.id}
-                        className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-1"
                       >
-                        {deleteLoading === tour.id ? "..." : "🗑️ Obriši"}
+                        {deleteLoading === tour.id ? "⏳..." : "🗑️ Obriši"}
                       </button>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Težina:</span>
-                      <div className="font-medium">{getDifficultyLabel(tour.difficulty)}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Dužina:</span>
-                      <div className="font-medium">{tour.total_length_km.toFixed(1)} km</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Cena:</span>
-                      <div className="font-medium">{tour.price.toFixed(2)} RSD</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Kreirana:</span>
-                      <div className="font-medium text-sm">{formatDate(tour.created_at)}</div>
-                    </div>
-                  </div>
-
-                  {tour.tags && tour.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {tour.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ID: {tour.id} • Ažurirano: {formatDate(tour.updated_at)}
-                    </span>
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/tours/edit/${tour.id}`}
-                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        Uredi osnovne podatke
-                      </Link>
-                      <Link
-                        to={`/tours/${tour.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        Pogledaj detalje →
-                      </Link>
+                      <div className="flex-1 text-right text-xs text-gray-500 dark:text-gray-400 self-center">
+                        {formatDate(tour.created_at)}
+                      </div>
                     </div>
                   </div>
                 </div>

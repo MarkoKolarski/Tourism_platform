@@ -10,19 +10,5 @@
 - 15.
 
 # TODO:
-- fix 16. fix purchasing/reserving
-    - tours-service needs to communicate with purcase-service (maybe use RPC?)
-        - fetch tour info / check if tour exists
-    - need to fix buttons on frontend (purchase)
-    - check out: purchases-service/app/api/purchase.py:def add_to_cart
 - 17. tour-service needs to do RPC with purchase-service to check if tour is bought
     - tourist can only start tours they bought
-
-
-# mini fixes
-- make tour name clickable navigate to tour
-- fix map goes over Layout navbar in TourDetails, Simulator pages
-- review: use current date for default datetime
-- center tour map to see all peakpoints
-- tour name in cart should be fetched
-- fix VODIC's MyTours buttons make css pretty for each tour

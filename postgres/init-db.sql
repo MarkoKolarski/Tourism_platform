@@ -164,3 +164,77 @@ DO $$ BEGIN
         (SELECT COUNT(*) FROM tours), 
         (SELECT COUNT(*) FROM key_points);
 END $$;
+
+
+
+-- Republic Square
+UPDATE key_points
+SET image_url = 'https://www.eyesonbelgrade.com/images/Architecture/KnezMihailo_NationalTheater.jpg'
+WHERE tour_id = 1
+AND name = 'Republic Square';
+
+-- Knez Mihailova Street
+UPDATE key_points
+SET image_url = 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/d3/45/10/caption.jpg?w=800&h=800&s=1'
+WHERE tour_id = 1
+AND name = 'Knez Mihailova Street';
+
+-- Belgrade Fortress
+UPDATE key_points
+SET image_url = 'https://private-tours.rs/travel-serbia/wp-content/uploads/2019/06/apartmani-kod-kalemegdana.jpg'
+WHERE tour_id = 1
+AND name = 'Belgrade Fortress';
+
+-- Skadarlija
+UPDATE key_points
+SET image_url = 'https://www.tob.rs/images/tekstovi/Skadarlija-621979624.JPG'
+WHERE tour_id = 1
+AND name = 'Skadarlija';
+
+-- Liberty Square
+UPDATE key_points
+SET image_url = 'https://media.gettyimages.com/id/543484732/photo/liberty-square-novi-sad-serbia.jpg?s=1024x1024&w=gi&k=20&c=_AG1UAzQ35udO6xt5WlzPhg-vStmRg83rQ8lQBle_cc='
+WHERE tour_id = 2
+AND name = 'Liberty Square';
+
+-- Name of Mary Church
+UPDATE key_points
+SET image_url = 'https://ilovenovisad.com/wp-content/uploads/2017/04/Prole%C4%87e-u-Novom-Sadu-8.jpg'
+WHERE tour_id = 2
+AND name = 'Name of Mary Church';
+
+-- Danube Street
+UPDATE key_points
+SET image_url = 'https://images.pexels.com/photos/17789392/pexels-photo-17789392/free-photo-of-danube-street-in-novi-sad.jpeg'
+WHERE tour_id = 2
+AND name = 'Danube Street';
+
+-- Kalemegdan Park Entrance
+UPDATE key_points
+SET image_url = 'https://c8.alamy.com/comp/WJ5PHP/entrance-to-kalemegdan-fortress-in-belgrade-capital-of-serbia-kalemegdan-park-is-the-largest-park-and-the-most-important-historical-monument-in-bel-WJ5PHP.jpg'
+WHERE tour_id = 3
+AND name = 'Kalemegdan Park Entrance';
+
+-- Clock Tower
+UPDATE key_points
+SET image_url = 'https://www.beogradskatvrdjava.co.rs/wp-content/uploads/2014/07/slika_900_Sahat_Tower_001.jpg'
+WHERE tour_id = 3
+AND name = 'Clock Tower';
+
+-- Victor Monument
+UPDATE key_points
+SET image_url = 'https://www.beogradskatvrdjava.co.rs/wp-content/uploads/2020/12/Spomenik-Pobednik-scaled.jpg'
+WHERE tour_id = 3
+AND name = 'Victor Monument';
+
+-- Military Museum
+UPDATE key_points
+SET image_url = 'https://www.balkanhistory.org/uploads/3/9/5/5/39556225/kalemegdan-afvs_orig.jpg'
+WHERE tour_id = 3
+AND name = 'Military Museum';
+
+-- Zindan Gate
+UPDATE key_points
+SET image_url = 'https://upload.wikimedia.org/wikipedia/commons/d/d5/K01_066_Beogradska_Tvr%C4%91ava%3B_Zindan-Tor.jpg'
+WHERE tour_id = 3
+AND name = 'Zindan Gate';

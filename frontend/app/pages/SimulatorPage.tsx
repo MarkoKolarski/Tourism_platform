@@ -225,13 +225,15 @@ export default function SimulatorPage() {
                   </p>
                 </div>
 
-                <MapComponent
-                  latitude={simulatorData.current_location?.latitude}
-                  longitude={simulatorData.current_location?.longitude}
-                  onMapClick={handleMapClick}
-                  className="w-full h-96"
-                  showUserLocation={true}
-                />
+                <div className="relative" style={{ zIndex: 1 }}>
+                  <MapComponent
+                    latitude={simulatorData.current_location?.latitude}
+                    longitude={simulatorData.current_location?.longitude}
+                    onMapClick={handleMapClick}
+                    className="w-full h-96"
+                    showUserLocation={true}
+                  />
+                </div>
 
                 <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                   <p><strong>Legenda:</strong></p>

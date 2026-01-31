@@ -364,7 +364,7 @@ export default function TourDetailPage() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with actions */}
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -435,7 +435,7 @@ export default function TourDetailPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Mapa Ture
               </h2>
-              <div className="h-96 rounded-lg overflow-hidden border">
+              <div className="h-96 rounded-lg overflow-hidden border relative" style={{ zIndex: 1 }}>
                 <MapComponent
                   latitude={userLocation?.latitude}
                   longitude={userLocation?.longitude}
@@ -451,17 +451,87 @@ export default function TourDetailPage() {
                   showUserLocation={!!userLocation}
                 />
               </div>
-              {keyPoints.length > 0 && (
-                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  <p className="font-medium mb-2">Ključne tačke:</p>
-                  <ul className="space-y-1">
-                    {keyPoints.map((kp) => (
-                      <li key={kp.id}>• {kp.name} ({kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)})</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
+
+            {/* Key Points Section */}
+            {keyPoints.length > 0 && (
+              <div className="card">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Ključne tačke ({keyPoints.length})
+                </h2>
+                <div className="space-y-6">
+                  {keyPoints.sort((a, b) => a.order - b.order).map((kp, index) => (
+                    <div key={kp.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col lg:flex-row">
+                        {/* Large Image - Full width on mobile, fixed width on desktop */}
+                        <div className="lg:w-80 lg:flex-shrink-0">
+                          {kp.image_url ? (
+                            <img 
+                              src={kp.image_url} 
+                              alt={kp.name}
+                              className="w-full h-64 lg:h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-64 lg:h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                              <svg className="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 p-6">
+                          <div className="flex items-start gap-4 mb-4">
+                            {/* Order number */}
+                            <div className="flex-shrink-0 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+                              {kp.order}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                {kp.name}
+                              </h3>
+                              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span className="font-mono text-xs">{kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg mb-4">
+                            {kp.description}
+                          </p>
+                          
+                          {index < keyPoints.length - 1 && (
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 pt-4 border-t border-gray-200 dark:border-gray-600">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                              </svg>
+                              <span className="text-sm font-medium">Sledeća tačka: {keyPoints[index + 1]?.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Summary info */}
+                <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-center sm:text-left">
+                    <span className="text-blue-800 dark:text-blue-200 font-semibold text-lg">
+                      Ukupno {keyPoints.length} ključnih tačaka
+                    </span>
+                    <span className="text-blue-600 dark:text-blue-400 font-medium text-lg">
+                      Dužina ture: {tour.total_length_km.toFixed(1)} km
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Additional Information */}
             <div className="card">

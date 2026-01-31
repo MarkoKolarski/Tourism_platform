@@ -23,6 +23,15 @@ interface Tour {
     image_url: string;
     order: number;
   };
+  keypoints?: Array<{
+    id: number;
+    name: string;
+    description: string;
+    latitude: number;
+    longitude: number;
+    image_url: string;
+    order: number;
+  }>;
 }
 
 export default function TouristTourPage() {
@@ -50,7 +59,24 @@ export default function TouristTourPage() {
       }
       
       const data = await response.json();
-      setTours(data.tours || []);
+      
+      // Fetch keypoints for each tour
+      const toursWithKeypoints = await Promise.all(
+        (data.tours || []).map(async (tour: Tour) => {
+          try {
+            const kpResponse = await fetch(`/api/tours-service/tours/${tour.id}/keypoints`);
+            if (kpResponse.ok) {
+              const kpData = await kpResponse.json();
+              return { ...tour, keypoints: kpData.keypoints || [] };
+            }
+          } catch (err) {
+            console.error(`Failed to fetch keypoints for tour ${tour.id}:`, err);
+          }
+          return { ...tour, keypoints: [] };
+        })
+      );
+      
+      setTours(toursWithKeypoints);
     } catch (err) {
       setError("Failed to load tours");
       console.error(err);
@@ -358,19 +384,33 @@ export default function TouristTourPage() {
                     </div>
                   )}
 
-                  {/* Tagovi */}
-                  <div className="mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      {tour.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                  {/* Keypoints preview */}
+                  {tour.keypoints && tour.keypoints.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Ključne tačke ({tour.keypoints.length}):
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {tour.keypoints.slice(0, 3).map((kp) => (
+                          <div key={kp.id} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-xs border border-gray-200 dark:border-gray-600">
+                            {kp.image_url && (
+                              <img 
+                                src={kp.image_url} 
+                                alt={kp.name}
+                                className="w-4 h-4 rounded object-cover"
+                              />
+                            )}
+                            <span className="text-gray-700 dark:text-gray-300">{kp.order}. {kp.name}</span>
+                          </div>
+                        ))}
+                        {tour.keypoints.length > 3 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
+                            +{tour.keypoints.length - 3}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Cart message for this tour */}
                   {cartMessage && cartMessage.tourId === tour.id && (
