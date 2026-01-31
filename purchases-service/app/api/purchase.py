@@ -67,7 +67,7 @@ def get_cart(
 
 
 @router.post("/cart/add", response_model=ShoppingCartResponse, status_code=status.HTTP_201_CREATED)
-def add_to_cart(
+async def add_to_cart(
     request: AddToCartRequest,
     current_user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -76,7 +76,7 @@ def add_to_cart(
     Dodaj turu u korpu
     
     Pokušava da verifikuje turu preko gRPC. Ako gRPC nije dostupan,
-    koristi podatke iz requesta.
+    koristi HTTP poziv ka Tours servisu.
     """
     service = PurchaseService(db)
     
@@ -85,10 +85,13 @@ def add_to_cart(
     exists, tour_data, error = tours_client.verify_tour_exists(request.tour_id)
     tours_client.close()
     
-    if exists and tour_data:
+    tour_name = request.tour_name
+    tour_price = request.tour_price
+    
+    if exists and tour_data and tour_data.get("name"):
         # Use data from gRPC if available
-        tour_name = tour_data.get("name") or request.tour_name or f"Tour #{request.tour_id}"
-        tour_price = tour_data.get("price") or request.tour_price or 100.0
+        tour_name = tour_data.get("name")
+        tour_price = tour_data.get("price", request.tour_price)
         
         # Check if tour is published
         if not tour_data.get("is_published", True):
@@ -97,10 +100,41 @@ def add_to_cart(
                 detail="Tour is not available for purchase"
             )
     else:
-        # Fallback to request data
-        logging.warning(f"Could not verify tour {request.tour_id} via gRPC: {error}")
-        tour_name = request.tour_name or f"Tour #{request.tour_id}"
-        tour_price = request.tour_price or 100.0
+        # Fallback: Try HTTP request to Tours service
+        logging.warning(f"gRPC verification failed for tour {request.tour_id}, trying HTTP")
+        try:
+            import httpx
+            from app.core.config import settings
+            
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(
+                    f"{settings.tours_service_url}/tours/{request.tour_id}"
+                )
+                
+                if response.status_code == 200:
+                    tour_json = response.json()
+                    tour_info = tour_json.get("tour", {})
+                    tour_name = tour_info.get("name", request.tour_name)
+                    tour_price = tour_info.get("price", request.tour_price)
+                    
+                    # Check if published
+                    tour_status = tour_info.get("status", "")
+                    if tour_status not in ["published", "archived"]:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Tour is not available for purchase"
+                        )
+                else:
+                    logging.warning(f"HTTP request failed for tour {request.tour_id}: {response.status_code}")
+                    # Use request data as final fallback
+                    tour_name = request.tour_name
+                    tour_price = request.tour_price
+                    
+        except Exception as e:
+            logging.error(f"Error fetching tour via HTTP: {e}")
+            # Use request data as final fallback
+            tour_name = request.tour_name
+            tour_price = request.tour_price
     
     cart, item = service.add_to_cart(
         user_id=current_user_id,

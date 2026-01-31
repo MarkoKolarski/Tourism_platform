@@ -51,23 +51,15 @@ class ToursGRPCClient:
             (exists, tour_data, error_message)
         """
         if not GRPC_AVAILABLE:
-            # Fallback: assume tour exists in development
-            logging.warning(f"gRPC not available, using fallback for tour {tour_id}")
-            return True, {
-                "name": f"Tour #{tour_id}",
-                "price": 100.0,
-                "is_published": True
-            }, None
+            # Fallback: return None so HTTP can be tried
+            logging.warning(f"gRPC not available for tour {tour_id}")
+            return False, None, "gRPC not available"
         
         if not self.stub:
             if not self.connect():
                 # Fallback when connection fails
-                logging.warning(f"gRPC connection failed, using fallback for tour {tour_id}")
-                return True, {
-                    "name": f"Tour #{tour_id}",
-                    "price": 100.0,
-                    "is_published": True
-                }, None
+                logging.warning(f"gRPC connection failed for tour {tour_id}")
+                return False, None, "gRPC connection failed"
         
         try:
             request = tours_pb2.VerifyTourRequest(tour_id=tour_id)
@@ -89,20 +81,12 @@ class ToursGRPCClient:
             
         except grpc.RpcError as e:
             logging.error(f"gRPC error verifying tour: {e}")
-            # Fallback on gRPC error
-            return True, {
-                "name": f"Tour #{tour_id}",
-                "price": 100.0,
-                "is_published": True
-            }, None
+            # Return failure so HTTP can be tried
+            return False, None, f"gRPC error: {str(e)}"
         except Exception as e:
             logging.error(f"Error verifying tour: {e}")
-            return True, {
-                "name": f"Tour #{tour_id}",
-                "price": 100.0,
-                "is_published": True
-            }, None
-    
+            return False, None, str(e)
+
     def close(self):
         """Close gRPC connection"""
         if self.channel:
