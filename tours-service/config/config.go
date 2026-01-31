@@ -12,6 +12,7 @@ type Config struct {
 	Port                string
 	GRPCPort            string
 	PurchasesServiceURL string
+	PurchasesGRPCAddr   string
 }
 
 func LoadConfig() *Config {
@@ -25,6 +26,7 @@ func LoadConfig() *Config {
 		Port:                getEnv("PORT", "8005"),
 		GRPCPort:            getEnv("GRPC_PORT", "50052"),
 		PurchasesServiceURL: getEnv("PURCHASES_SERVICE_URL", "http://localhost:8003"),
+		PurchasesGRPCAddr:   getEnv("PURCHASES_GRPC_ADDR", "purchases-service:50053"),
 	}
 }
 

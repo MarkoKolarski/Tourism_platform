@@ -28,11 +28,17 @@ COPY proto /proto
 
 # Create the output directory for generated proto files
 RUN mkdir -p proto/tours
+RUN mkdir -p proto/purchases
 
-# Generate protobuf files into the correct subdirectory
+# Generate protobuf files for tours service
 RUN protoc --go_out=proto/tours --go_opt=paths=source_relative \
     --go-grpc_out=proto/tours --go-grpc_opt=paths=source_relative \
     -I/proto /proto/tours.proto
+
+# Generate protobuf files for purchases service
+RUN protoc --go_out=proto/purchases --go_opt=paths=source_relative \
+    --go-grpc_out=proto/purchases --go-grpc_opt=paths=source_relative \
+    -I/proto /proto/purchases.proto
 
 # Build the application from within the service directory
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .

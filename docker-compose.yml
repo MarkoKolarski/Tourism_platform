@@ -92,6 +92,7 @@ services:
     container_name: tourism-purchases-service
     ports:
       - "8003:8003"
+      - "50053:50053"
     environment:
       - DATABASE_URL=postgresql://postgres:ftn@postgres:5432/tourism_purchase
       - SECRET_KEY=dev-secret-key
@@ -154,6 +155,7 @@ services:
       - DB_PASSWORD=ftn
       - JWT_SECRET=dev-secret-key
       - PURCHASES_SERVICE_URL=http://purchases-service:8003
+      - PURCHASES_GRPC_ADDR=purchases-service:50053
     depends_on:
       postgres:
         condition: service_healthy

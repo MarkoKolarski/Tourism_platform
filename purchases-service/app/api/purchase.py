@@ -303,6 +303,40 @@ def get_token(
     return token
 
 
+@router.get("/tokens/verify")
+def verify_tour_purchase(
+    user_id: int,
+    tour_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify if a user has purchased a specific tour
+    Used by Tours Service to check if user can start a tour
+    
+    Returns 200 if user has active token for this tour
+    Returns 404 if user hasn't purchased this tour
+    """
+    token = db.query(TourPurchaseToken).filter(
+        and_(
+            TourPurchaseToken.user_id == user_id,
+            TourPurchaseToken.tour_id == tour_id,
+            TourPurchaseToken.is_active == OrderStatus.COMPLETED
+        )
+    ).first()
+    
+    if token:
+        return {
+            "has_purchased": True,
+            "token_id": token.id,
+            "purchased_at": token.purchased_at
+        }
+    
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="User has not purchased this tour"
+    )
+
+
 # ========== SAGA Transaction Endpoints (Admin/Debug) ==========
 
 @router.get("/transactions", response_model=List[SagaTransactionResponse])

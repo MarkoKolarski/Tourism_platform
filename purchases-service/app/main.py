@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.core.database import engine
 from app.models.purchase import Base
 from app.api.purchase import router as purchase_router
+import threading
+import logging
 
 # Kreiranje tabela u bazi
 Base.metadata.create_all(bind=engine)
@@ -58,6 +60,19 @@ app.include_router(
     tags=["purchase"]
 )
 
+# Start gRPC server in background thread
+def start_grpc_background():
+    try:
+        from app.grpc.purchases_server import start_grpc_server
+        start_grpc_server("50053")
+    except Exception as e:
+        logging.error(f"Failed to start gRPC server: {e}")
+
+# Start gRPC server
+grpc_thread = threading.Thread(target=start_grpc_background, daemon=True)
+grpc_thread.start()
+logging.info("gRPC server thread started")
+
 # Health check endpoints
 @app.get("/")
 async def root():
@@ -67,9 +82,10 @@ async def root():
         "status": "running",
         "features": [
             "Shopping Cart",
-            "SAGA Pattern Checkout",
+            "SAGA Pattern Checkout", 
             "Purchase Tokens",
-            "Distributed Transactions"
+            "Distributed Transactions",
+            "gRPC Purchase Verification"
         ]
     }
 
