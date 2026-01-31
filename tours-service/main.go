@@ -26,6 +26,9 @@ func main() {
 	db := database.InitDB(cfg)
 	defer db.Close()
 
+	// Initialize gRPC client for purchases service
+	log.Printf("[gRPC] Connecting to Purchases service at %s", cfg.PurchasesGRPCAddr)
+
 	// Start gRPC server in goroutine
 	go func() {
 		grpcPort := cfg.GRPCPort
@@ -33,7 +36,7 @@ func main() {
 			grpcPort = "50052"
 		}
 		log.Printf("[gRPC] Starting Tours gRPC server on port %s", grpcPort)
-		if err := grpc.StartGRPCServer(db, grpcPort); err != nil {
+		if err := grpc.StartGRPCServer(db, grpcPort, cfg.PurchasesGRPCAddr); err != nil {
 			log.Fatalf("Failed to start gRPC server: %v", err)
 		}
 	}()

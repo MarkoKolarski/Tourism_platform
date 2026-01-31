@@ -23,22 +23,30 @@ RUN go mod verify
 # Copy the rest of the source code
 COPY tours-service/ .
 
-# Copy proto files
+# Copy proto files from root proto directory
 COPY proto /proto
 
 # Create the output directory for generated proto files
 RUN mkdir -p proto/tours
 RUN mkdir -p proto/purchases
 
-# Generate protobuf files for tours service
-RUN protoc --go_out=proto/tours --go_opt=paths=source_relative \
-    --go-grpc_out=proto/tours --go-grpc_opt=paths=source_relative \
+# Generate protobuf files for tours service (server)
+RUN protoc --go_out=. --go_opt=paths=source_relative \
+    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+    --go_opt=Mtours.proto=tours-service/proto/tours \
+    --go-grpc_opt=Mtours.proto=tours-service/proto/tours \
     -I/proto /proto/tours.proto
 
-# Generate protobuf files for purchases service
-RUN protoc --go_out=proto/purchases --go_opt=paths=source_relative \
-    --go-grpc_out=proto/purchases --go-grpc_opt=paths=source_relative \
+# Generate protobuf files for purchases service (client)
+RUN protoc --go_out=. --go_opt=paths=source_relative \
+    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+    --go_opt=Mpurchases.proto=tours-service/proto/purchases \
+    --go-grpc_opt=Mpurchases.proto=tours-service/proto/purchases \
     -I/proto /proto/purchases.proto
+
+# Move generated files to the correct locations
+RUN mv tours.pb.go tours_grpc.pb.go proto/tours/ 2>/dev/null || true
+RUN mv purchases.pb.go purchases_grpc.pb.go proto/purchases/ 2>/dev/null || true
 
 # Build the application from within the service directory
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .

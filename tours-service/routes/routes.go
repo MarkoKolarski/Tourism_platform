@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"tours-service/config"
+	"tours-service/grpc"
+	"tours-service/handlers"
 	"tours-service/middleware"
 	"tours-service/models"
 
@@ -26,16 +28,23 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	root.GET("/tours/for-tourists", getToursForTourists(db))
 	root.GET("/tours/status/:status", getToursByStatus(db))
 
+	// Initialize gRPC client for purchases service
+	purchasesClient := grpc.NewPurchasesGRPCClient(cfg.PurchasesGRPCAddr)
+
+	// Initialize tour execution handler
+	executionHandler := handlers.NewTourExecutionHandler(db, purchasesClient)
+
 	// Protected routes - require authentication
 	protected := root.Use(middleware.NewAuthMiddleware(cfg, db))
 
-	// Tourist routes
+	// Tourist routes with purchase verification - secure endpoints
+	protected.POST("/tours/:id/start", executionHandler.StartTour)
+	protected.GET("/executions/active", executionHandler.GetActiveExecution)
+	protected.PUT("/executions/:execution_id/location", executionHandler.UpdateLocation)
+	protected.POST("/executions/:execution_id/keypoints/:keypoint_id/complete", executionHandler.CompleteKeyPoint)
+	protected.POST("/executions/:execution_id/complete", executionHandler.CompleteTour)
+	protected.POST("/executions/:execution_id/abandon", executionHandler.AbandonTour)
 	protected.POST("/tours/:id/reviews", createReview(db))
-	protected.POST("/tours/:id/start", startTour(db))
-	protected.GET("/tours/execution/active", getActiveTourExecution(db))
-	protected.POST("/tours/execution/:id/location", updateTourLocation(db))
-	protected.POST("/tours/execution/:id/complete", completeTourExecution(db))
-	protected.POST("/tours/execution/:id/abandon", abandonTourExecution(db))
 
 	// VODIC routes
 	vodic := protected.Use(middleware.RequireRole("VODIC"))

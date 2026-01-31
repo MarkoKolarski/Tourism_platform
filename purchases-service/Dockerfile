@@ -11,22 +11,28 @@ RUN apt-get update && apt-get install -y \
 COPY purchases-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy proto files and generate Python code
+# Copy proto files from root and generate Python code
 COPY proto /proto
 RUN mkdir -p proto
 RUN touch proto/__init__.py
-RUN python -m grpc_tools.protoc \
-    -I/proto \
-    --python_out=proto \
-    --grpc_python_out=proto \
-    /proto/tours.proto || echo "Proto generation failed, will use fallback"
 
-# Generate purchases proto files
+# Generate purchases proto files first (what this service implements)
 RUN python -m grpc_tools.protoc \
     -I/proto \
     --python_out=proto \
     --grpc_python_out=proto \
-    /proto/purchases.proto || echo "Purchases proto generation failed"
+    /proto/purchases.proto
+
+# Generate tours proto files (what this service calls)
+RUN python -m grpc_tools.protoc \
+    -I/proto \
+    --python_out=proto \
+    --grpc_python_out=proto \
+    /proto/tours.proto
+
+# Fix import paths in generated files
+RUN sed -i 's/^import purchases_pb2/from . import purchases_pb2/' proto/purchases_pb2_grpc.py || true
+RUN sed -i 's/^import tours_pb2/from . import tours_pb2/' proto/tours_pb2_grpc.py || true
 
 # Copy purchases-service application
 COPY purchases-service/ .

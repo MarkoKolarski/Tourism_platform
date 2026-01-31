@@ -23,6 +23,8 @@ from app.services.purchase_service import PurchaseService
 from fastapi import Header
 from app.grpc.tours_client import ToursGRPCClient
 import logging
+from app.models.purchase import TourPurchaseToken, OrderStatus
+from sqlalchemy import and_
 
 router = APIRouter()
 
@@ -328,7 +330,7 @@ def verify_tour_purchase(
         return {
             "has_purchased": True,
             "token_id": token.id,
-            "purchased_at": token.purchased_at
+            "purchased_at": token.purchased_at.isoformat()
         }
     
     raise HTTPException(

@@ -13,11 +13,15 @@ import (
 
 type ToursServer struct {
 	pb.UnimplementedToursServiceServer
-	db *sql.DB
+	db              *sql.DB
+	purchasesClient *PurchasesGRPCClient
 }
 
-func NewToursServer(db *sql.DB) *ToursServer {
-	return &ToursServer{db: db}
+func NewToursServer(db *sql.DB, purchasesAddr string) *ToursServer {
+	return &ToursServer{
+		db:              db,
+		purchasesClient: NewPurchasesGRPCClient(purchasesAddr),
+	}
 }
 
 func (s *ToursServer) VerifyTourExists(ctx context.Context, req *pb.VerifyTourRequest) (*pb.VerifyTourResponse, error) {
@@ -62,6 +66,25 @@ func (s *ToursServer) VerifyTourExists(ctx context.Context, req *pb.VerifyTourRe
 func (s *ToursServer) VerifyPurchaseToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
 	log.Printf("[gRPC] VerifyPurchaseToken called for user_id: %d, tour_id: %d", req.UserId, req.TourId)
 
+	// Use the gRPC client to verify purchase with the purchases service
+	hasPurchased, tokenID, err := s.purchasesClient.VerifyPurchase(int(req.UserId), int(req.TourId))
+	if err != nil {
+		log.Printf("[gRPC] Error verifying purchase: %v", err)
+		return &pb.VerifyTokenResponse{
+			HasToken: false,
+			Error:    fmt.Sprintf("Failed to verify purchase: %v", err),
+		}, nil
+	}
+
+	if !hasPurchased {
+		log.Printf("[gRPC] User %d has not purchased tour %d", req.UserId, req.TourId)
+		return &pb.VerifyTokenResponse{
+			HasToken: false,
+			Error:    "Purchase not found",
+		}, nil
+	}
+
+	log.Printf("[gRPC] Purchase verified for user %d, tour %d, token: %s", req.UserId, req.TourId, tokenID)
 	return &pb.VerifyTokenResponse{
 		HasToken: true,
 		Error:    "",
@@ -100,16 +123,17 @@ func (s *ToursServer) ReserveTours(ctx context.Context, req *pb.ReserveToursRequ
 	}, nil
 }
 
-func StartGRPCServer(db *sql.DB, port string) error {
+func StartGRPCServer(db *sql.DB, port string, purchasesAddr string) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterToursServiceServer(s, NewToursServer(db))
+	pb.RegisterToursServiceServer(s, NewToursServer(db, purchasesAddr))
 
 	log.Printf("[gRPC] Tours gRPC server starting on port %s", port)
+	log.Printf("[gRPC] Will connect to purchases service at %s", purchasesAddr)
 	if err := s.Serve(lis); err != nil {
 		return fmt.Errorf("failed to serve: %v", err)
 	}
