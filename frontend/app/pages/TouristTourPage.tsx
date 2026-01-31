@@ -26,13 +26,15 @@ interface Tour {
 }
 
 export default function TouristTourPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [addingToCart, setAddingToCart] = useState<number | null>(null);
+  const [cartMessage, setCartMessage] = useState<{ tourId: number; message: string } | null>(null);
 
   useEffect(() => {
     fetchTours();
@@ -86,6 +88,45 @@ export default function TouristTourPage() {
     return "★".repeat(difficulty) + "☆".repeat(5 - difficulty);
   };
 
+  const handleAddToCart = async (tour: Tour) => {
+    if (!token || !user) {
+      setCartMessage({ tourId: tour.id, message: "Morate biti prijavljeni" });
+      setTimeout(() => setCartMessage(null), 3000);
+      return;
+    }
+
+    try {
+      setAddingToCart(tour.id);
+
+      const response = await fetch("/api/purchases-service/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          tour_id: tour.id,
+          tour_name: tour.name,
+          tour_price: tour.price,
+          quantity: 1
+        })
+      });
+
+      if (response.ok) {
+        setCartMessage({ tourId: tour.id, message: "Dodano u korpu!" });
+      } else {
+        const error = await response.json();
+        setCartMessage({ tourId: tour.id, message: `Greška: ${error.detail}` });
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      setCartMessage({ tourId: tour.id, message: "Greška pri dodavanju" });
+    } finally {
+      setAddingToCart(null);
+      setTimeout(() => setCartMessage(null), 3000);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -107,11 +148,21 @@ export default function TouristTourPage() {
     <Layout>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Dostupne ture</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Pregledajte sve objavljene ture. Kliknite na turu da vidite više detalja.
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Dostupne ture</h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Pregledajte sve objavljene ture. Kliknite na turu da vidite više detalja.
+            </p>
+          </div>
+          {user?.role.toLowerCase() === "turista" && (
+            <Link
+              to="/purchase"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              🛒 Moja korpa
+            </Link>
+          )}
         </div>
 
         {error && (
@@ -296,14 +347,31 @@ export default function TouristTourPage() {
                     </div>
                   </div>
 
-                  {/* Autor i dugme */}
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                   {/* <div className="text-sm text-gray-500">
-                      Autor: {tour.author_name || `ID: ${tour.author_id}`}
-                    </div>*/}
+                  {/* Cart message for this tour */}
+                  {cartMessage && cartMessage.tourId === tour.id && (
+                    <div className={`mb-3 p-2 rounded text-sm text-center ${
+                      cartMessage.message.includes("Greška") || cartMessage.message.includes("prijavljeni")
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200"
+                        : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200"
+                    }`}>
+                      {cartMessage.message}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex justify-between items-center mt-4 pt-4 border-t gap-2">
+                    {user?.role.toLowerCase() === "turista" && (
+                      <button
+                        onClick={() => handleAddToCart(tour)}
+                        disabled={addingToCart === tour.id}
+                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50"
+                      >
+                        {addingToCart === tour.id ? "..." : "🛒"}
+                      </button>
+                    )}
                     <Link
                       to={`/tours/${tour.id}`}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
                     >
                       Vidi detalje
                     </Link>

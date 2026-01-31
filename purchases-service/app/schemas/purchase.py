@@ -54,8 +54,8 @@ class ShoppingCartResponse(BaseModel):
 class AddToCartRequest(BaseModel):
     """Request za dodavanje ture u korpu"""
     tour_id: int = Field(..., description="ID ture")
-    tour_name: Optional[str] = Field(None, description="Naziv ture (opciono)")
-    tour_price: Optional[float] = Field(None, gt=0, description="Cena ture (opciono)")
+    tour_name: str = Field(..., description="Naziv ture")
+    tour_price: float = Field(..., gt=0, description="Cena ture")
     quantity: int = Field(default=1, ge=1, description="Broj osoba")
 
 

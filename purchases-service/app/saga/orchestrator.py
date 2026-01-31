@@ -23,6 +23,7 @@ from app.models.purchase import (
     SagaTransaction, OrderStatus
 )
 from app.core.config import settings
+from app.grpc.tours_client import ToursGRPCClient
 
 
 class SagaStep:
@@ -45,7 +46,8 @@ class SagaOrchestrator:
         self.saga_transaction: Optional[SagaTransaction] = None
         self.completed_steps: List[str] = []
         self.compensation_log: List[str] = []
-        
+        self.tours_grpc_client = ToursGRPCClient()
+    
     def create_saga_transaction(self, cart_id: int, user_id: int) -> str:
         """Kreiranje nove SAGA transakcije"""
         transaction_id = f"SAGA-{uuid.uuid4().hex[:12].upper()}"
@@ -216,30 +218,29 @@ class SagaOrchestrator:
     async def _reserve_tours(self, tour_ids: List[int], user_id: int) -> bool:
         """
         KORAK 2: Rezervacija tura u Tours servisu
-        Simulacija - označava ture kao 'reserved'
+        Verifikacija preko gRPC da ture postoje i da su published
         """
         try:
-            # Simulacija poziva Tours servisa
-            # U produkciji bi ovde bio stvarni API poziv
-            # TODO: fix tours reserve
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.post(
-                    f"{settings.tours_service_url}/tours/reserve",
-                    json={
-                        "tour_ids": tour_ids,
-                        "user_id": user_id
-                    }
-                )
+            # Verify each tour exists via gRPC
+            for tour_id in tour_ids:
+                exists, tour_data, error = self.tours_grpc_client.verify_tour_exists(tour_id)
                 
-                if response.status_code in [200, 201]:
-                    return True
-                    
-        except Exception as e:
-            print(f"Tours service not available (development mode): {e}")
-            # U development-u, simuliraj uspešnu rezervaciju
+                if not exists:
+                    print(f"Tour {tour_id} verification failed: {error}")
+                    return False
+                
+                if not tour_data.get("is_published"):
+                    print(f"Tour {tour_id} is not published")
+                    return False
+                
+                print(f"✓ Tour {tour_id} verified: {tour_data['name']}")
+            
+            # All tours verified successfully
             return True
-        
-        return False
+            
+        except Exception as e:
+            print(f"Error verifying tours via gRPC: {e}")
+            return False
     
     async def _process_payment(
         self, 

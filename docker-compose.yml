@@ -87,8 +87,8 @@ services:
 
   purchases-service:
     build:
-      context: ./purchases-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: purchases-service/Dockerfile
     container_name: tourism-purchases-service
     ports:
       - "8003:8003"
@@ -100,12 +100,15 @@ services:
       - STAKEHOLDERS_SERVICE_URL=http://stakeholders-service:8001
       - FOLLOWERS_SERVICE_URL=http://followers-service:8002
       - BLOGS_SERVICE_URL=http://blogs-service:8004
-      - TOURS_SERVICE_URL=http://tours-service:8004
+      - TOURS_SERVICE_URL=http://tours-service:8005
+      - TOURS_GRPC_ADDR=tours-service:50052
     networks:
       - tourism-network
     depends_on:
       postgres:
         condition: service_healthy
+      tours-service:
+        condition: service_started
     restart: unless-stopped
 
   blogs-service:
@@ -135,19 +138,22 @@ services:
 
   tours-service:
     build:
-      context: ./tours-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: tours-service/Dockerfile
     container_name: tourism-tours-service
     ports:
       - "8005:8005"
+      - "50052:50052"
     environment:
       - PORT=8005
+      - GRPC_PORT=50052
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=tourism_tours
       - DB_USER=postgres
       - DB_PASSWORD=ftn
       - JWT_SECRET=dev-secret-key
+      - PURCHASES_SERVICE_URL=http://purchases-service:8003
     depends_on:
       postgres:
         condition: service_healthy

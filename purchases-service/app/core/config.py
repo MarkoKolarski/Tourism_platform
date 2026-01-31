@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     stakeholders_service_url: str = "http://localhost:8001"
     followers_service_url: str = "http://localhost:8002"
     tours_service_url: str = "http://localhost:8005"
+    
+    # gRPC addresses
+    tours_grpc_addr: str = "tours-service:50052"
 
     class Config:
         env_file = ".env"

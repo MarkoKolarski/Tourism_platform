@@ -45,6 +45,8 @@ export default function TourDetailPage() {
   const userLocation = useUserLocation();
   const [startingTour, setStartingTour] = useState(false);
   const [hasActiveTour, setHasActiveTour] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState<string | null>(null);
 
   const fetchTour = async () => {
     try {
@@ -116,6 +118,42 @@ export default function TourDetailPage() {
       setError("Failed to delete tour");
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!token || !user || !tour) return;
+
+    try {
+      setAddingToCart(true);
+      setCartMessage(null);
+
+      const response = await fetch("/api/purchases-service/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          tour_id: tour.id,
+          tour_name: tour.name,
+          tour_price: tour.price,
+          quantity: 1
+        })
+      });
+
+      if (response.ok) {
+        setCartMessage("Tura je dodana u korpu!");
+        setTimeout(() => setCartMessage(null), 3000);
+      } else {
+        const error = await response.json();
+        setCartMessage(`Greška: ${error.detail}`);
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      setCartMessage("Greška pri dodavanju u korpu");
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -430,9 +468,40 @@ export default function TourDetailPage() {
                 </div>
                 <p className="text-gray-600 dark:text-gray-400">po osobi</p>
               </div>
+
+              {/* Cart Message */}
+              {cartMessage && (
+                <div className={`mb-4 p-3 rounded-lg text-center text-sm ${
+                  cartMessage.includes("Greška") 
+                    ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200"
+                    : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200"
+                }`}>
+                  {cartMessage}
+                </div>
+              )}
               
               {user?.role.toLowerCase() === "turista" && (tour.status === "published" || tour.status === "archived") && (
-                <>
+                <div className="space-y-3">
+                  {/* Add to Cart Button */}
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={addingToCart}
+                    className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addingToCart ? "Dodavanje..." : "🛒 Dodaj u korpu"}
+                  </button>
+
+                  {/* View Cart Link */}
+                  <Link
+                    to="/purchase"
+                    className="block w-full text-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-6 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    Pogledaj korpu →
+                  </Link>
+
+                  <hr className="border-gray-300 dark:border-gray-600" />
+
+                  {/* Start Tour Section */}
                   {hasActiveTour ? (
                     <div className="space-y-3">
                       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
@@ -456,7 +525,7 @@ export default function TourDetailPage() {
                       {startingTour ? "Pokretanje..." : "🚀 Pokreni turu"}
                     </button>
                   )}
-                </>
+                </div>
               )}
             </div>
 

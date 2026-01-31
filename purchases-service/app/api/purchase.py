@@ -21,7 +21,8 @@ from app.schemas.purchase import (
 )
 from app.services.purchase_service import PurchaseService
 from fastapi import Header
-
+from app.grpc.tours_client import ToursGRPCClient
+import logging
 
 router = APIRouter()
 
@@ -47,7 +48,7 @@ def get_current_user_id(authorization: str = Header(None)) -> int:
     if not user_id:
         return 1
     
-    return user_id
+    return int(user_id)
 
 
 # ========== Shopping Cart Endpoints ==========
@@ -74,22 +75,32 @@ def add_to_cart(
     """
     Dodaj turu u korpu
     
-    **Parametri:**
-    - `tour_id`: ID ture koja se dodaje
-    - `tour_name`: Naziv ture (opciono, default: "Tour #ID")
-    - `tour_price`: Cena ture (opciono, default: 100.0)
-    - `quantity`: Broj osoba (default: 1)
-    
-    Tura mora postojati i mora biti aktivna (ne arhivirana).
+    Pokušava da verifikuje turu preko gRPC. Ako gRPC nije dostupan,
+    koristi podatke iz requesta.
     """
     service = PurchaseService(db)
     
-    # TODO: U produkciji, ovde treba validacija da tura postoji
-    # Poziv Tours servisa da dobije informacije o turi
+    # Try to verify tour exists via gRPC
+    tours_client = ToursGRPCClient()
+    exists, tour_data, error = tours_client.verify_tour_exists(request.tour_id)
+    tours_client.close()
     
-    # Koristi vrednosti iz requesta ili placeholders
-    tour_name = request.tour_name or f"Tour #{request.tour_id}"
-    tour_price = request.tour_price or 100.0
+    if exists and tour_data:
+        # Use data from gRPC if available
+        tour_name = tour_data.get("name") or request.tour_name or f"Tour #{request.tour_id}"
+        tour_price = tour_data.get("price") or request.tour_price or 100.0
+        
+        # Check if tour is published
+        if not tour_data.get("is_published", True):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tour is not available for purchase"
+            )
+    else:
+        # Fallback to request data
+        logging.warning(f"Could not verify tour {request.tour_id} via gRPC: {error}")
+        tour_name = request.tour_name or f"Tour #{request.tour_id}"
+        tour_price = request.tour_price or 100.0
     
     cart, item = service.add_to_cart(
         user_id=current_user_id,

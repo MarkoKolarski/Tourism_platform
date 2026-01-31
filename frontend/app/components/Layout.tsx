@@ -115,6 +115,12 @@ export default function Layout({ children }: LayoutProps) {
                         <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🗺️</span>
                         <span className="text-xs font-medium">Ture</span>
                       </Link>
+                      <Link 
+                        to="/purchase" 
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        🛒 Korpa
+                      </Link>
                     </>
                   )}
                   {user?.role.toLowerCase() === "vodic" && (
@@ -215,6 +221,12 @@ export default function Layout({ children }: LayoutProps) {
                       )}
                       <Link to="/tourist-tours/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                         🗺️ Ture
+                      </Link>
+                      <Link 
+                        to="/purchase" 
+                        className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        🛒 Korpa
                       </Link>
                     </>
                   )}

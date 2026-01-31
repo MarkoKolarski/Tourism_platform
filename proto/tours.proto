@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package tours;
+
+option go_package = "./;tours";
+
+service ToursService {
+  rpc VerifyTourExists(VerifyTourRequest) returns (VerifyTourResponse);
+  rpc VerifyPurchaseToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  rpc ReserveTours(ReserveToursRequest) returns (ReserveToursResponse);
+}
+
+message VerifyTourRequest {
+  int32 tour_id = 1;
+}
+
+message VerifyTourResponse {
+  bool exists = 1;
+  bool is_published = 2;
+  string name = 3;
+  double price = 4;
+  string error = 5;
+}
+
+message VerifyTokenRequest {
+  int32 user_id = 1;
+  int32 tour_id = 2;
+}
+
+message VerifyTokenResponse {
+  bool has_token = 1;
+  string error = 2;
+}
+
+message ReserveToursRequest {
+  repeated int32 tour_ids = 1;
+  int32 user_id = 2;
+}
+
+message ReserveToursResponse {
+  bool success = 1;
+  string error = 2;
+}
