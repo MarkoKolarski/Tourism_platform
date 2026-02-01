@@ -20,7 +20,7 @@ type Tour struct {
 	ID            int        `json:"id"`
 	Name          string     `json:"name"`
 	Description   string     `json:"description"`
-	Difficulty    int        `json:"difficulty"` // 1-3 (easy, medium, hard)
+	Difficulty    int        `json:"difficulty"` // 1-5 (easy, medium, hard, very hard, extreme)
 	Tags          []string   `json:"tags"`
 	Price         float64    `json:"price"`
 	Status        TourStatus `json:"status"`
@@ -35,7 +35,7 @@ type Tour struct {
 type CreateTourRequest struct {
 	Name        string   `json:"name" binding:"required"`
 	Description string   `json:"description" binding:"required"`
-	Difficulty  int      `json:"difficulty" binding:"required,min=1,max=3"`
+	Difficulty  int      `json:"difficulty" binding:"required,min=1,max=5"`
 	Tags        []string `json:"tags" binding:"required"`
 }
 
@@ -49,22 +49,13 @@ type UpdateTourRequest struct {
 }
 
 func CreateToursTable(db *sql.DB) error {
-
-	// TODO: this will drop existing data - modify in production
-
-	// Drop and recreate to ensure schema is correct
-	dropQuery := `DROP TABLE IF EXISTS tours CASCADE`
-	_, err := db.Exec(dropQuery)
-	if err != nil {
-		return err
-	}
-
+	// Create table if it doesn't exist - don't drop existing data
 	query := `
-    CREATE TABLE tours (
+    CREATE TABLE IF NOT EXISTS tours (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
-        difficulty INTEGER NOT NULL CHECK (difficulty BETWEEN 1 AND 3),
+        difficulty INTEGER NOT NULL CHECK (difficulty BETWEEN 1 AND 5),
         tags TEXT[] NOT NULL DEFAULT '{}',
         price DECIMAL(10,2) NOT NULL DEFAULT 0,
         status VARCHAR(20) NOT NULL DEFAULT 'draft',
@@ -76,7 +67,7 @@ func CreateToursTable(db *sql.DB) error {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`
 
-	_, err = db.Exec(query)
+	_, err := db.Exec(query)
 	return err
 }
 

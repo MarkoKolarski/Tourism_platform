@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str
 
     # Security
-    secret_key: str
+    jwt_secret: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     stakeholders_service_url: str = "http://localhost:8001"
     followers_service_url: str = "http://localhost:8002"
     tours_service_url: str = "http://localhost:8005"
+    
+    # gRPC addresses
+    tours_grpc_addr: str = "tours-service:50052"
 
     class Config:
         env_file = ".env"

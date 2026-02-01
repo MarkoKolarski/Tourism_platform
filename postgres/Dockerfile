@@ -2,7 +2,6 @@ FROM postgres:15
 
 # Copy initialization scripts in correct order
 COPY init-db.sql /docker-entrypoint-initdb.d/01-init-db.sql
-COPY populate-users.sql /docker-entrypoint-initdb.d/02-populate-users.sql
 
 # Ensure scripts are executable
 RUN chmod +x /docker-entrypoint-initdb.d/*.sql

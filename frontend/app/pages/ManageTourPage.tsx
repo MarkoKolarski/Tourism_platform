@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
+import MapComponent from "../components/MapComponent";
 import { useAuth } from "../context/AuthContext";
 import { useUserLocation } from "../hooks/useUserLocation";
 
@@ -66,10 +67,6 @@ export default function ManageTourPage() {
     duration_min: ""
   });
 
-  // State za mapu
-  const [mapCenter, setMapCenter] = useState<[number, number]>([44.7866, 20.4489]); // Podrazumevano: Beograd
-  const [selectedPosition, setSelectedPosition] = useState<[number, number] | null>(null);
-  const mapRef = useRef<any>(null);
   const userLocation = useUserLocation();
 
   useEffect(() => {
@@ -106,7 +103,11 @@ export default function ManageTourPage() {
       // Ako postoje ključne tačke, centriraj mapu na prvu
       if (kpData.keypoints && kpData.keypoints.length > 0) {
         const firstKp = kpData.keypoints[0];
-        setMapCenter([firstKp.latitude, firstKp.longitude]);
+        setKpForm({
+          ...kpForm,
+          latitude: firstKp.latitude.toFixed(6),
+          longitude: firstKp.longitude.toFixed(6)
+        });
       }
     } catch (err) {
       setError("Failed to load tour data");
@@ -116,11 +117,10 @@ export default function ManageTourPage() {
   };
 
   const handleMapClick = (lat: number, lng: number) => {
-    setSelectedPosition([lat, lng]);
     setKpForm({
       ...kpForm,
-      latitude: lat.toString(),
-      longitude: lng.toString()
+      latitude: lat.toFixed(6),
+      longitude: lng.toFixed(6)
     });
   };
 
@@ -160,7 +160,6 @@ export default function ManageTourPage() {
 
       // Resetuj formu i stanje
       setKpForm({ id: null, name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
-      setSelectedPosition(null);
       setShowKPForm(false);
       setEditingKeyPoint(null);
       fetchTourData();
@@ -255,20 +254,17 @@ export default function ManageTourPage() {
       id: kp.id,
       name: kp.name,
       description: kp.description,
-      latitude: kp.latitude.toString(),
-      longitude: kp.longitude.toString(),
+      latitude: kp.latitude.toFixed(6),
+      longitude: kp.longitude.toFixed(6),
       image_url: kp.image_url,
       order: kp.order.toString()
     });
     setShowKPForm(true);
-    setSelectedPosition([kp.latitude, kp.longitude]);
-    setMapCenter([kp.latitude, kp.longitude]);
   };
 
   const cancelEdit = () => {
     setEditingKeyPoint(null);
     setShowKPForm(false);
-    setSelectedPosition(null);
     setKpForm({ id: null, name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
   };
 
@@ -378,7 +374,6 @@ export default function ManageTourPage() {
                     onClick={() => {
                       setShowKPForm(true);
                       setEditingKeyPoint(null);
-                      setSelectedPosition(null);
                       setKpForm({ id: null, name: "", description: "", latitude: "", longitude: "", image_url: "", order: "" });
                     }}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg"
@@ -401,11 +396,12 @@ export default function ManageTourPage() {
                       className="px-4 py-2 border rounded-lg dark:bg-gray-700"
                     />
                     <input
-                      type="text"
+                      type="number"
                       placeholder="Redni broj"
                       value={kpForm.order}
-                      readOnly
-                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                      onChange={(e) => !editingKeyPoint && setKpForm({ ...kpForm, order: e.target.value })}
+                      readOnly={!!editingKeyPoint}
+                      className={`px-4 py-2 border rounded-lg dark:bg-gray-700 ${editingKeyPoint ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''}`}
                     />
                     <input
                       type="text"
@@ -413,7 +409,7 @@ export default function ManageTourPage() {
                       required
                       readOnly
                       value={kpForm.latitude}
-                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
                     />
                     <input
                       type="text"
@@ -421,7 +417,7 @@ export default function ManageTourPage() {
                       required
                       readOnly
                       value={kpForm.longitude}
-                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600"
+                      className="px-4 py-2 border rounded-lg dark:bg-gray-700 bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
                     />
                     <input
                       type="text"
@@ -503,23 +499,33 @@ export default function ManageTourPage() {
             <div className="h-[calc(100vh-10rem)] sticky top-24">
               <p className="mb-2 font-medium">Mapa ključnih tačaka</p>
               <div className="h-full rounded-lg overflow-hidden border">
-                {typeof window !== "undefined" ? (
-                  <Suspense fallback={<div className="h-full flex items-center justify-center">Učitavam mapu...</div>}>
-                    <TourMap
-                      center={mapCenter}
-                      keyPoints={keyPoints}
-                      selectedPosition={selectedPosition}
-                      onMapClick={handleMapClick}
-                      editingKpId={editingKeyPoint?.id}
-                      userLocation={userLocation}
-                    />
-                  </Suspense>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    Mapa se učitava...
-                  </div>
-                )}
+                <MapComponent
+                  latitude={kpForm.latitude ? parseFloat(kpForm.latitude) : undefined}
+                  longitude={kpForm.longitude ? parseFloat(kpForm.longitude) : undefined}
+                  onMapClick={handleMapClick}
+                  className="w-full h-full"
+                  keyPoints={keyPoints}
+                  editingKeyPointId={editingKeyPoint?.id || null}
+                  showUserLocation={false}
+                />
               </div>
+              {kpForm.latitude && kpForm.longitude && (
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  <p>📍 Odabrana lokacija: {parseFloat(kpForm.latitude).toFixed(6)}, {parseFloat(kpForm.longitude).toFixed(6)}</p>
+                </div>
+              )}
+              {keyPoints.length > 0 && (
+                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 max-h-32 overflow-y-auto">
+                  <p className="font-medium mb-2">Ključne tačke:</p>
+                  <ul className="space-y-1">
+                    {keyPoints.sort((a, b) => a.order - b.order).map((kp) => (
+                      <li key={kp.id} className={editingKeyPoint?.id === kp.id ? "text-blue-600 font-medium" : ""}>
+                        • {kp.order}. {kp.name} ({kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}

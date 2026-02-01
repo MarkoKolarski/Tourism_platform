@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import Layout from "../components/Layout";
+import MapComponent from "../components/MapComponent";
 import { useAuth } from "../context/AuthContext";
 import ReviewForm from "../components/ReviewForm";
 import ReviewList from "../components/ReviewList";
@@ -30,9 +31,6 @@ interface KeyPoint {
   order: number;
 }
 
-// Dinamički učitaj mapu samo na klijentu
-const TourMap = lazy(() => import("../components/TourMap"));
-
 export default function TourDetailPage() {
   const { id } = useParams();
   const { token, user } = useAuth();
@@ -45,6 +43,10 @@ export default function TourDetailPage() {
   const [keyPoints, setKeyPoints] = useState<KeyPoint[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const userLocation = useUserLocation();
+  const [startingTour, setStartingTour] = useState(false);
+  const [hasActiveTour, setHasActiveTour] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState<string | null>(null);
 
   const fetchTour = async () => {
     try {
@@ -119,6 +121,49 @@ export default function TourDetailPage() {
     }
   };
 
+  const handleAddToCart = async () => {
+    if (!token || !user || !tour) return;
+
+    // Check if tour has a valid price
+    if (!tour.price || tour.price <= 0) {
+      setCartMessage("Ova tura nema definisanu cenu i ne može se dodati u korpu");
+      setTimeout(() => setCartMessage(null), 5000);
+      return;
+    }
+
+    try {
+      setAddingToCart(true);
+      setCartMessage(null);
+
+      const response = await fetch("/api/purchases-service/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          tour_id: tour.id,
+          tour_name: tour.name,
+          tour_price: tour.price,
+          quantity: 1
+        })
+      });
+
+      if (response.ok) {
+        setCartMessage("Tura je dodana u korpu!");
+        setTimeout(() => setCartMessage(null), 3000);
+      } else {
+        const error = await response.json();
+        setCartMessage(`Greška: ${error.detail}`);
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      setCartMessage("Greška pri dodavanju u korpu");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchTour();
@@ -127,9 +172,97 @@ export default function TourDetailPage() {
     }
   }, [id]);
 
+  // Check if user has an active tour
+  useEffect(() => {
+    const checkActiveTour = async () => {
+      if (!token || !user) return;
+      
+      try {
+        const response = await fetch("/api/tours-service/tours/execution/active", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        // 204 means no active tour
+        if (response.status === 204 || !response.ok) {
+          setHasActiveTour(false);
+          return;
+        }
+        
+        // Only set true if we successfully get data
+        if (response.ok) {
+          try {
+            const data = await response.json();
+            setHasActiveTour(!!data.execution);
+          } catch (e) {
+            setHasActiveTour(false);
+          }
+        } else {
+          setHasActiveTour(false);
+        }
+      } catch (error) {
+        console.error("Error checking active tour:", error);
+        setHasActiveTour(false);
+      }
+    };
+
+    checkActiveTour();
+  }, [token, user]);
+
   const handleReviewSuccess = () => {
     setShowReviewForm(false);
     fetchReviews();
+  };
+
+  const handleStartTour = async () => {
+    if (!token || !user || !tour) return;
+
+    try {
+      setStartingTour(true);
+
+      // First, get current location from Position Simulator
+      const locationResponse = await fetch(`/api/tours-service/locations/current`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!locationResponse.ok) {
+        throw new Error("Molimo prvo postavite vašu lokaciju pomoću Position Simulatora");
+      }
+
+      const locationData = await locationResponse.json();
+      
+      if (!locationData.current_location) {
+        throw new Error("Molimo prvo postavite vašu lokaciju pomoću Position Simulatora");
+      }
+
+      const { latitude, longitude } = locationData.current_location;
+
+      // Start the tour
+      const response = await fetch(`/api/tours-service/tours/${tour.id}/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ latitude, longitude })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Greška pri pokretanju ture");
+      }
+
+      // Redirect to active tour page
+      navigate("/tours/active");
+    } catch (error) {
+      console.error("Error starting tour:", error);
+      alert(error instanceof Error ? error.message : "Greška pri pokretanju ture");
+    } finally {
+      setStartingTour(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -154,7 +287,20 @@ export default function TourDetailPage() {
       case 1: return "Lako";
       case 2: return "Srednje";
       case 3: return "Teško";
+      case 4: return "Vrlo teško";
+      case 5: return "Ekstremno";
       default: return "Nepoznato";
+    }
+  };
+
+  const getDifficultyColor = (difficulty: number) => {
+    switch(difficulty) {
+      case 1: return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+      case 2: return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+      case 3: return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200";
+      case 4: return "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200";
+      case 5: return "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200";
+      default: return "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200";
     }
   };
 
@@ -213,9 +359,14 @@ export default function TourDetailPage() {
   const canEdit = user?.role.toLowerCase() === "vodic" && isOwner;
   const isAuthenticated = !!token;
 
+  const handleMapClick = (lat: number, lng: number) => {
+    // For TourDetailPage, map is read-only
+    console.log("Map clicked at:", lat, lng);
+  };
+
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with actions */}
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -286,22 +437,104 @@ export default function TourDetailPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Mapa Ture
               </h2>
-              <div className="h-96 rounded-lg overflow-hidden border">
-                {typeof window !== "undefined" ? (
-                  <Suspense fallback={<div className="h-full flex items-center justify-center">Učitavam mapu...</div>}>
-                    <TourMap
-                      center={keyPoints.length > 0 ? [keyPoints[0].latitude, keyPoints[0].longitude] : [44.7866, 20.4489]}
-                      keyPoints={keyPoints}
-                      userLocation={userLocation}
-                    />
-                  </Suspense>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    Mapa se učitava...
-                  </div>
-                )}
+              <div className="h-96 rounded-lg overflow-hidden border relative" style={{ zIndex: 1 }}>
+                <MapComponent
+                  latitude={userLocation?.latitude}
+                  longitude={userLocation?.longitude}
+                  onMapClick={handleMapClick}
+                  className="w-full h-full"
+                  keyPoints={keyPoints.map(kp => ({
+                    id: kp.id,
+                    name: kp.name,
+                    latitude: kp.latitude,
+                    longitude: kp.longitude,
+                    order: kp.order
+                  }))}
+                  completedKeyPoints={[]} // Empty array for tour detail view
+                  showUserLocation={!!userLocation}
+                />
               </div>
             </div>
+
+            {/* Key Points Section */}
+            {keyPoints.length > 0 && (
+              <div className="card">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Ključne tačke ({keyPoints.length})
+                </h2>
+                <div className="space-y-6">
+                  {keyPoints.sort((a, b) => a.order - b.order).map((kp, index) => (
+                    <div key={kp.id} className="bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col lg:flex-row">
+                        {/* Large Image - Full width on mobile, fixed width on desktop */}
+                        <div className="lg:w-80 lg:flex-shrink-0">
+                          {kp.image_url ? (
+                            <img 
+                              src={kp.image_url} 
+                              alt={kp.name}
+                              className="w-full h-64 lg:h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-64 lg:h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                              <svg className="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 p-6">
+                          <div className="flex items-start gap-4 mb-4">
+                            {/* Order number */}
+                            <div className="flex-shrink-0 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg">
+                              {kp.order}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                {kp.name}
+                              </h3>
+                              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span className="font-mono text-xs">{kp.latitude.toFixed(6)}, {kp.longitude.toFixed(6)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-lg mb-4">
+                            {kp.description}
+                          </p>
+                          
+                          {index < keyPoints.length - 1 && (
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 pt-4 border-t border-gray-200 dark:border-gray-600">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                              </svg>
+                              <span className="text-sm font-medium">Sledeća tačka: {keyPoints[index + 1]?.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Summary info */}
+                <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-center sm:text-left">
+                    <span className="text-blue-800 dark:text-blue-200 font-semibold text-lg">
+                      Ukupno {keyPoints.length} ključnih tačaka
+                    </span>
+                    <span className="text-blue-600 dark:text-blue-400 font-medium text-lg">
+                      Dužina ture: {tour.total_length_km.toFixed(1)} km
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Additional Information */}
             <div className="card">
@@ -345,10 +578,71 @@ export default function TourDetailPage() {
                 </div>
                 <p className="text-gray-600 dark:text-gray-400">po osobi</p>
               </div>
+
+              {/* Cart Message */}
+              {cartMessage && (
+                <div className={`mb-4 p-3 rounded-lg text-center text-sm ${
+                  cartMessage.includes("Greška") 
+                    ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200"
+                    : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200"
+                }`}>
+                  {cartMessage}
+                </div>
+              )}
               
-              <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Rezervišite sada
-              </button>
+              {user?.role.toLowerCase() === "turista" && (tour.status === "published" || tour.status === "archived") && (
+                <div className="space-y-3">
+                  {/* Add to Cart Button - disabled if no price */}
+                  {tour.price && tour.price > 0 ? (
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={addingToCart}
+                      className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {addingToCart ? "Dodavanje..." : "🛒 Dodaj u korpu"}
+                    </button>
+                  ) : (
+                    <div className="w-full bg-gray-300 text-gray-600 py-3 px-6 rounded-lg text-center font-medium cursor-not-allowed">
+                      Cena nije definisana
+                    </div>
+                  )}
+
+                  {/* View Cart Link */}
+                  <Link
+                    to="/purchase"
+                    className="block w-full text-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-6 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    Pogledaj korpu →
+                  </Link>
+
+                  <hr className="border-gray-300 dark:border-gray-600" />
+
+                  {/* Start Tour Section */}
+                  {hasActiveTour ? (
+                    <div className="space-y-3">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
+                        <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                          Već imate aktivnu turu
+                        </p>
+                      </div>
+                      <Link 
+                        to="/tours/active"
+                        className="block w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
+                      >
+                        Pogledaj aktivnu turu
+                      </Link>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleStartTour}
+                      disabled={startingTour}
+                      className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {startingTour ? "Pokretanje..." : "🚀 Pokreni turu"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Tour Details Card */}
@@ -360,7 +654,9 @@ export default function TourDetailPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
                   <span className="text-gray-600 dark:text-gray-400">Težina</span>
-                  <span className="font-medium">{getDifficultyLabel(tour.difficulty)}</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(tour.difficulty)}`}>
+                    {getDifficultyLabel(tour.difficulty)}
+                  </span>
                 </div>
                 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">

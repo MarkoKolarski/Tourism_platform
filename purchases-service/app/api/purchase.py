@@ -21,7 +21,10 @@ from app.schemas.purchase import (
 )
 from app.services.purchase_service import PurchaseService
 from fastapi import Header
-
+from app.grpc.tours_client import ToursGRPCClient
+import logging
+from app.models.purchase import TourPurchaseToken, OrderStatus
+from sqlalchemy import and_
 
 router = APIRouter()
 
@@ -32,22 +35,41 @@ def get_current_user_id(authorization: str = Header(None)) -> int:
     Frontend ima zaštitu - svi moraju biti ulogovani da pristupe Purchase stranici
     """
     if not authorization or not authorization.startswith("Bearer "):
-        # Bez tokena, koristi default user ID za testiranje
-        return 1
-    
+        logging.warning("[AUTH] Missing/invalid Authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header"
+        )
+
     token = authorization.replace("Bearer ", "")
+    logging.info(f"[AUTH] Attempting to decode JWT token")
+
     payload = decode_access_token(token)
-    
     if not payload:
-        # Invalid token, ali dozvoli pristup sa default user
-        return 1
-    
-    # JWT token ima 'sub' field koji sadrži user ID
-    user_id = payload.get("sub")
-    if not user_id:
-        return 1
-    
-    return user_id
+        logging.warning("[AUTH] Invalid token payload")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        logging.warning(f"[AUTH] 'sub' missing in token payload: {payload}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token structure"
+        )
+
+    try:
+        user_id = int(user_id_str)
+        logging.info(f"[AUTH] Successfully authenticated user_id: {user_id}")
+        return user_id
+    except ValueError:
+        logging.error(f"[AUTH] Invalid user_id format: {user_id_str}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID format"
+        )
 
 
 # ========== Shopping Cart Endpoints ==========
@@ -66,7 +88,7 @@ def get_cart(
 
 
 @router.post("/cart/add", response_model=ShoppingCartResponse, status_code=status.HTTP_201_CREATED)
-def add_to_cart(
+async def add_to_cart(
     request: AddToCartRequest,
     current_user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -74,22 +96,66 @@ def add_to_cart(
     """
     Dodaj turu u korpu
     
-    **Parametri:**
-    - `tour_id`: ID ture koja se dodaje
-    - `tour_name`: Naziv ture (opciono, default: "Tour #ID")
-    - `tour_price`: Cena ture (opciono, default: 100.0)
-    - `quantity`: Broj osoba (default: 1)
-    
-    Tura mora postojati i mora biti aktivna (ne arhivirana).
+    Pokušava da verifikuje turu preko gRPC. Ako gRPC nije dostupan,
+    koristi HTTP poziv ka Tours servisu.
     """
     service = PurchaseService(db)
     
-    # TODO: U produkciji, ovde treba validacija da tura postoji
-    # Poziv Tours servisa da dobije informacije o turi
+    # Try to verify tour exists via gRPC
+    tours_client = ToursGRPCClient()
+    exists, tour_data, error = tours_client.verify_tour_exists(request.tour_id)
+    tours_client.close()
     
-    # Koristi vrednosti iz requesta ili placeholders
-    tour_name = request.tour_name or f"Tour #{request.tour_id}"
-    tour_price = request.tour_price or 100.0
+    tour_name = request.tour_name
+    tour_price = request.tour_price
+    
+    if exists and tour_data and tour_data.get("name"):
+        # Use data from gRPC if available
+        tour_name = tour_data.get("name")
+        tour_price = tour_data.get("price", request.tour_price)
+        
+        # Check if tour is published
+        if not tour_data.get("is_published", True):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tour is not available for purchase"
+            )
+    else:
+        # Fallback: Try HTTP request to Tours service
+        logging.warning(f"gRPC verification failed for tour {request.tour_id}, trying HTTP")
+        try:
+            import httpx
+            from app.core.config import settings
+            
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(
+                    f"{settings.tours_service_url}/tours/{request.tour_id}"
+                )
+                
+                if response.status_code == 200:
+                    tour_json = response.json()
+                    tour_info = tour_json.get("tour", {})
+                    tour_name = tour_info.get("name", request.tour_name)
+                    tour_price = tour_info.get("price", request.tour_price)
+                    
+                    # Check if published
+                    tour_status = tour_info.get("status", "")
+                    if tour_status not in ["published", "archived"]:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Tour is not available for purchase"
+                        )
+                else:
+                    logging.warning(f"HTTP request failed for tour {request.tour_id}: {response.status_code}")
+                    # Use request data as final fallback
+                    tour_name = request.tour_name
+                    tour_price = request.tour_price
+                    
+        except Exception as e:
+            logging.error(f"Error fetching tour via HTTP: {e}")
+            # Use request data as final fallback
+            tour_name = request.tour_name
+            tour_price = request.tour_price
     
     cart, item = service.add_to_cart(
         user_id=current_user_id,
@@ -175,12 +241,14 @@ async def checkout(
     
     **SAGA koraci:**
     1. Validacija korisnika (Stakeholders Service)
-    2. Rezervacija tura (Tours Service)
+    2. Rezervacija tura (Tours Service) - verifikacija da ture postoje i dostupne su
     3. Procesiranje plaćanja (Payment Service)
     4. Generisanje purchase tokena
     5. Ažuriranje statistike korisnika
     
     Ako bilo koji korak ne uspe, automatski se pokreće kompenzacija (rollback).
+    
+    **Napomena:** Ako checkout ne uspe, možete pokušati ponovo. Cart će biti resetovan u PENDING status.
     
     **Vraća:**
     - `transaction_id`: ID SAGA transakcije
@@ -196,9 +264,16 @@ async def checkout(
     )
     
     if not success:
+        # Provide more helpful error message
+        error_detail = error or "Unknown error occurred"
+        
+        # Add suggestion to check tour availability
+        if "reservation failed" in error.lower() or "not available" in error.lower():
+            error_detail += ". Molimo proverite da li su sve ture u korpi još uvek dostupne i objavljene."
+        
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Checkout failed: {error}"
+            detail=f"Checkout failed: {error_detail}"
         )
     
     # Kalkulacija ukupne cene

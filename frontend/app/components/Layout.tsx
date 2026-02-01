@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
 interface LayoutProps {
@@ -8,8 +8,54 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
+  const [hasActiveTour, setHasActiveTour] = useState(false);
+
+  // Check for active tour
+  useEffect(() => {
+    const checkActiveTour = async () => {
+      if (!token || !user || user.role.toLowerCase() !== "turista") {
+        setHasActiveTour(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch("/api/tours-service/tours/execution/active", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        // 204 or any error status means no active tour
+        if (response.status === 204 || !response.ok) {
+          setHasActiveTour(false);
+          return;
+        }
+        
+        // Only set true if we get a 200 OK with valid data
+        if (response.ok) {
+          try {
+            const data = await response.json();
+            setHasActiveTour(!!data.execution);
+          } catch (e) {
+            setHasActiveTour(false);
+          }
+        } else {
+          setHasActiveTour(false);
+        }
+      } catch (error) {
+        console.error("Error checking active tour:", error);
+        setHasActiveTour(false);
+      }
+    };
+
+    checkActiveTour();
+    
+    // Recheck every 30 seconds
+    const interval = setInterval(checkActiveTour, 30000);
+    return () => clearInterval(interval);
+  }, [token, user]);
 
   const handleLogout = async () => {
     logout();
@@ -53,10 +99,6 @@ export default function Layout({ children }: LayoutProps) {
                     <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🔗</span>
                     <span className="text-xs font-medium">Pratioci</span>
                   </Link>
-                  <Link to="/purchase" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
-                    <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛒</span>
-                    <span className="text-xs font-medium">Kupovina</span>
-                  </Link>
                   <Link to="/simulator" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
                     <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">📍</span>
                     <span className="text-xs font-medium">Simulator</span>
@@ -68,10 +110,22 @@ export default function Layout({ children }: LayoutProps) {
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "turista" && (
-                    <Link to="/tourist-tours/" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
-                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🗺️</span>
-                      <span className="text-xs font-medium">Ture</span>
-                    </Link>
+                    <>
+                      {hasActiveTour && (
+                        <Link to="/tours/active" className="flex flex-col items-center px-3 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors group animate-pulse">
+                          <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🚶</span>
+                          <span className="text-xs font-medium">Aktivna tura</span>
+                        </Link>
+                      )}
+                      <Link to="/tourist-tours/" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                        <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🗺️</span>
+                        <span className="text-xs font-medium">Ture</span>
+                      </Link>
+                      <Link to="/purchase" className="flex flex-col items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
+                        <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">🛒</span>
+                        <span className="text-xs font-medium">Korpa</span>
+                      </Link>
+                    </>
                   )}
                   {user?.role.toLowerCase() === "vodic" && (
                     <>
@@ -151,9 +205,6 @@ export default function Layout({ children }: LayoutProps) {
                   <Link to="/followers" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     🔗 Pratioci
                   </Link>
-                  <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    🛒 Kupovina
-                  </Link>
                   <Link to="/simulator" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     📍 Simulator
                   </Link>
@@ -163,9 +214,19 @@ export default function Layout({ children }: LayoutProps) {
                     </Link>
                   )}
                   {user?.role.toLowerCase() === "turista" && (
-                    <Link to="/tourist-tours/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                      🗺️ Ture
-                    </Link>
+                    <>
+                      {hasActiveTour && (
+                        <Link to="/tours/active" className="block px-3 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 font-medium">
+                          🚶 Aktivna tura
+                        </Link>
+                      )}
+                      <Link to="/tourist-tours/" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        🗺️ Ture
+                      </Link>
+                      <Link to="/purchase" className="block px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        🛒 Korpa
+                      </Link>
+                    </>
                   )}
                   {user?.role.toLowerCase() === "vodic" && (
                     <>

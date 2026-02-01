@@ -20,7 +20,7 @@ interface SimulatorData {
 }
 
 export default function SimulatorPage() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
   const [simulatorData, setSimulatorData] = useState<SimulatorData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,8 +42,10 @@ export default function SimulatorPage() {
     const fetchCurrentLocation = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
-          credentials: "include",
+        const response = await fetch(`/api/tours-service/locations/current`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
         });
         
         if (!response.ok) {
@@ -68,12 +70,12 @@ export default function SimulatorPage() {
 
     try {
       setUpdating(true);
-      const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
+      const response = await fetch(`/api/tours-service/locations/current`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
-        credentials: "include",
         body: JSON.stringify({
           latitude: parseFloat(lat.toFixed(6)),
           longitude: parseFloat(lng.toFixed(6)),
@@ -113,9 +115,11 @@ export default function SimulatorPage() {
 
     try {
       setUpdating(true);
-      const response = await fetch(`/api/stakeholders-service/locations/current/${user.id}`, {
+      const response = await fetch(`/api/tours-service/locations/current`, {
         method: "DELETE",
-        credentials: "include",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
@@ -225,12 +229,15 @@ export default function SimulatorPage() {
                   </p>
                 </div>
 
-                <MapComponent
-                  latitude={simulatorData.current_location?.latitude}
-                  longitude={simulatorData.current_location?.longitude}
-                  onMapClick={handleMapClick}
-                  className="w-full h-96"
-                />
+                <div className="relative" style={{ zIndex: 1 }}>
+                  <MapComponent
+                    latitude={simulatorData.current_location?.latitude}
+                    longitude={simulatorData.current_location?.longitude}
+                    onMapClick={handleMapClick}
+                    className="w-full h-96"
+                    showUserLocation={true}
+                  />
+                </div>
 
                 <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                   <p><strong>Legenda:</strong></p>
@@ -253,6 +260,8 @@ export default function SimulatorPage() {
                   <li>• Koordinate se čuvaju u bazi podataka za buduće korišćenje</li>
                   <li>• Samo jedan korisnik može imati aktivnu lokaciju u isto vreme</li>
                   <li>• Lokacija se koristi za funkcionalnosti vezane za geografsku poziciju</li>
+                  <li>• <strong>Tokom aktivne ture:</strong> Lokacija se automatski prati svakih 10 sekundi</li>
+                  <li>• <strong>Ključne tačke:</strong> Kada ste blizu (~50m), automatski se označavaju kao posećene</li>
                 </ul>
               </div>
             </div>

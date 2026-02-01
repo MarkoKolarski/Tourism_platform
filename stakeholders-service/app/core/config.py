@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str
         
     # Security
-    secret_key: str
+    jwt_secret: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"tours-service/config"
+	"tours-service/grpc"
+	"tours-service/handlers"
 	"tours-service/middleware"
 	"tours-service/models"
 
@@ -26,16 +28,27 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	root.GET("/tours/for-tourists", getToursForTourists(db))
 	root.GET("/tours/status/:status", getToursByStatus(db))
 
+	// Initialize gRPC client for purchases service
+	purchasesClient := grpc.NewPurchasesGRPCClient(cfg.PurchasesGRPCAddr)
+
+	// Initialize tour execution handler
+	executionHandler := handlers.NewTourExecutionHandler(db, purchasesClient)
+
 	// Protected routes - require authentication
 	protected := root.Use(middleware.NewAuthMiddleware(cfg, db))
 
-	// Tourist routes
+	// Tourist routes with purchase verification - secure endpoints
+	protected.POST("/tours/:id/start", executionHandler.StartTour)
+	protected.GET("/tours/execution/active", executionHandler.GetActiveExecution)
+	protected.GET("/tours/execution/:execution_id/completed-keypoints", getCompletedKeyPointsForExecution(db))
+	protected.POST("/tours/execution/:execution_id/complete", executionHandler.CompleteTour)
+	protected.POST("/tours/execution/:execution_id/abandon", executionHandler.AbandonTour)
 	protected.POST("/tours/:id/reviews", createReview(db))
-	protected.POST("/tours/:id/start", startTour(db))
-	protected.GET("/tours/execution/active", getActiveTourExecution(db))
-	protected.POST("/tours/execution/:id/location", updateTourLocation(db))
-	protected.POST("/tours/execution/:id/complete", completeTourExecution(db))
-	protected.POST("/tours/execution/:id/abandon", abandonTourExecution(db))
+
+	// Location simulator routes - private, use authenticated user
+	protected.GET("/locations/current", getCurrentLocation(db))
+	protected.PUT("/locations/current", updateCurrentLocationWithTourCheck(db)) // Enhanced version
+	protected.DELETE("/locations/current", clearCurrentLocation(db))
 
 	// VODIC routes
 	vodic := protected.Use(middleware.RequireRole("VODIC"))
@@ -673,10 +686,25 @@ func getActiveTourExecution(db *sql.DB) gin.HandlerFunc {
 		execution, err := models.GetActiveTourExecution(db, touristID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{"error": "No active tour execution"})
+				// 204 with JSON
+				c.JSON(http.StatusNoContent, gin.H{"error": "No active tour execution"})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch execution"})
+			return
+		}
+
+		// Get tour details
+		tour, err := models.GetTourByID(db, execution.TourID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tour details"})
+			return
+		}
+
+		// Get key points for the tour
+		keyPoints, err := models.GetKeyPointsByTourID(db, execution.TourID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch key points"})
 			return
 		}
 
@@ -685,6 +713,8 @@ func getActiveTourExecution(db *sql.DB) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"execution":           execution,
+			"tour":                tour,
+			"keypoints":           keyPoints,
 			"completed_keypoints": completed,
 		})
 	}
@@ -881,5 +911,246 @@ func getToursByStatus(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"tours": toursData})
+	}
+}
+
+func getCurrentLocation(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDInterface, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in token"})
+			return
+		}
+
+		var userID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			userID = int(v)
+		case string:
+			var err error
+			userID, err = strconv.Atoi(v)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+				return
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID type"})
+			return
+		}
+
+		location, err := models.GetCurrentLocationByUserID(db, userID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusOK, gin.H{
+					"user_id":          userID,
+					"username":         "User", // In production, fetch from user service
+					"current_location": nil,
+					"has_location":     false,
+				})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch location"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"user_id":          userID,
+			"username":         "User", // In production, fetch from user service
+			"current_location": location,
+			"has_location":     true,
+		})
+	}
+}
+
+func updateCurrentLocationWithTourCheck(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDInterface, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in token"})
+			return
+		}
+
+		var userID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			userID = int(v)
+		case string:
+			var err error
+			userID, err = strconv.Atoi(v)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+				return
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID type"})
+			return
+		}
+
+		var req models.LocationUpdateRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// 1. Update the position simulator location
+		location, err := models.UpdateCurrentLocation(db, userID, req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update location"})
+			return
+		}
+
+		// 2. Check if user has an active tour execution
+		activeExecution, err := models.GetActiveTourExecution(db, userID)
+		response := gin.H{
+			"location":        location,
+			"tour_execution":  nil,
+			"nearby_keypoint": nil,
+			"completed":       false,
+		}
+
+		if err == nil && activeExecution != nil {
+			// User has active tour - update tour execution
+			log.Printf("[Location Update] User %d has active tour execution %d", userID, activeExecution.ID)
+
+			// Update last activity
+			if err := models.UpdateLastActivity(db, activeExecution.ID); err != nil {
+				log.Printf("[Location Update] Failed to update last activity: %v", err)
+			}
+
+			// Get all key points for the tour
+			keyPoints, err := models.GetKeyPointsByTourID(db, activeExecution.TourID)
+			if err != nil {
+				log.Printf("[Location Update] Failed to get key points: %v", err)
+			} else {
+				completed, err := models.GetCompletedKeyPoints(db, activeExecution.ID)
+				if err != nil {
+					log.Printf("[Location Update] Failed to get completed key points: %v", err)
+					completed = []models.CompletedKeyPoint{}
+				}
+
+				// Check if near any uncompleted key point (within ~50 meters)
+				const proximityThreshold = 0.0005 // approximately 50 meters
+
+				completedIDs := make(map[int]bool)
+				for _, ckp := range completed {
+					completedIDs[ckp.KeyPointID] = true
+				}
+
+				var nearbyKeyPoint *models.KeyPoint
+				for i := range keyPoints {
+					kp := &keyPoints[i]
+					if completedIDs[kp.ID] {
+						continue
+					}
+
+					latDiff := req.Latitude - kp.Latitude
+					lonDiff := req.Longitude - kp.Longitude
+					distance := latDiff*latDiff + lonDiff*lonDiff
+
+					if distance < proximityThreshold*proximityThreshold {
+						nearbyKeyPoint = kp
+						break
+					}
+				}
+
+				if nearbyKeyPoint != nil {
+					err := models.MarkKeyPointCompleted(db, activeExecution.ID, nearbyKeyPoint.ID)
+					if err != nil {
+						log.Printf("[Location Update] Failed to mark key point completed: %v", err)
+					} else {
+						log.Printf("[Location Update] Key point %d completed for execution %d", nearbyKeyPoint.ID, activeExecution.ID)
+						response["nearby_keypoint"] = nearbyKeyPoint
+						response["completed"] = true
+					}
+				}
+			}
+
+			response["tour_execution"] = gin.H{
+				"id":            activeExecution.ID,
+				"tour_id":       activeExecution.TourID,
+				"last_activity": activeExecution.LastActivity,
+			}
+		} else if err != sql.ErrNoRows {
+			log.Printf("[Location Update] Error checking for active tour: %v", err)
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func clearCurrentLocation(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDInterface, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in token"})
+			return
+		}
+
+		var userID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			userID = int(v)
+		case string:
+			var err error
+			userID, err = strconv.Atoi(v)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+				return
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID type"})
+			return
+		}
+
+		deletedCount, err := models.DeleteCurrentLocation(db, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete location"})
+			return
+		}
+
+		message := "Location cleared successfully"
+		if deletedCount == 0 {
+			message = "User had no location set"
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message":           message,
+			"deleted_locations": deletedCount,
+		})
+	}
+}
+
+func getCompletedKeyPointsForExecution(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		executionID, err := strconv.Atoi(c.Param("execution_id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid execution ID"})
+			return
+		}
+
+		// Verify ownership
+		userIDInterface, _ := c.Get("user_id")
+		var touristID int
+		switch v := userIDInterface.(type) {
+		case float64:
+			touristID = int(v)
+		case string:
+			touristID, _ = strconv.Atoi(v)
+		}
+
+		// Get execution and verify it belongs to this user
+		execution, err := models.GetActiveTourExecution(db, touristID)
+		if err != nil || execution.ID != executionID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized"})
+			return
+		}
+
+		completed, err := models.GetCompletedKeyPoints(db, executionID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch completed keypoints"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"completed_keypoints": completed})
 	}
 }

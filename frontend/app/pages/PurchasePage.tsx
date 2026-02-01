@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
 interface CartItem {
   id: number;
@@ -43,7 +43,7 @@ interface SagaTransaction {
 }
 
 export default function PurchasePage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, token, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [cart, setCart] = useState<ShoppingCart | null>(null);
   const [tokens, setTokens] = useState<PurchaseToken[]>([]);
@@ -54,7 +54,6 @@ export default function PurchasePage() {
 
   const API_URL = "/api/purchases-service";
 
-  // Map backend status values to Serbian labels and badge classes
   const statusToSerbian = (status: string | boolean | undefined) => {
     const s = String(status ?? '').toLowerCase();
     switch (s) {
@@ -79,6 +78,14 @@ export default function PurchasePage() {
     }
   };
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('sr-RS', {
+      style: 'currency',
+      currency: 'RSD',
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
   // Redirect if not authenticated
   useEffect(() => {
     if (isLoading) return;
@@ -88,55 +95,16 @@ export default function PurchasePage() {
   }, [isLoading, isAuthenticated, navigate]);
 
   const fetchCart = async () => {
-    if (!user?.token) return;
+    if (!token) return;
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/cart`, {
-        headers: { "Authorization": `Bearer ${user?.token}` }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await response.json();
       setCart(data);
     } catch (error) {
       console.error("Error fetching cart:", error);
-      alert("Greška pri učitavanju korpe");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addToCart = async (tourName: string, price: number, quantity: number) => {
-    setLoading(true);
-    try {
-      // Automatski odabir sledećeg dostupnog Tour ID-a
-      const nextTourId = cart && cart.items.length > 0 
-        ? Math.max(...cart.items.map(item => item.tour_id)) + 1 
-        : 1;
-      
-      const response = await fetch(`${API_URL}/cart/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify({ 
-          tour_id: nextTourId, 
-          tour_name: tourName,
-          tour_price: price,
-          quantity 
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCart(data);
-        alert("Tura dodata u korpu!");
-      } else {
-        const error = await response.json();
-        alert(`Greška: ${error.detail}`);
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      alert("Greška pri dodavanju u korpu");
     } finally {
       setLoading(false);
     }
@@ -147,7 +115,7 @@ export default function PurchasePage() {
     try {
       const response = await fetch(`${API_URL}/cart/items/${itemId}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${user?.token}` }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       
       if (response.ok) {
@@ -161,8 +129,34 @@ export default function PurchasePage() {
     }
   };
 
+  const updateQuantity = async (itemId: number, quantity: number) => {
+    if (quantity < 1) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/cart/items/${itemId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ quantity })
+      });
+      
+      if (response.ok) {
+        fetchCart();
+      }
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const checkout = async () => {
-    if (!cart) return;
+    if (!cart || cart.items.length === 0) {
+      alert("Korpa je prazna!");
+      return;
+    }
     
     setLoading(true);
     try {
@@ -170,7 +164,7 @@ export default function PurchasePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ cart_id: cart.id })
       });
@@ -181,6 +175,7 @@ export default function PurchasePage() {
         fetchCart();
         fetchTokens();
         fetchTransactions();
+        setActiveTab("tokens");
       } else {
         const error = await response.json();
         alert(`Greška: ${error.detail}`);
@@ -197,7 +192,7 @@ export default function PurchasePage() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/tokens`, {
-        headers: { "Authorization": `Bearer ${user?.token}` }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await response.json();
       setTokens(data);
@@ -212,7 +207,7 @@ export default function PurchasePage() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/transactions`, {
-        headers: { "Authorization": `Bearer ${user?.token}` }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await response.json();
       setTransactions(data);
@@ -232,11 +227,11 @@ export default function PurchasePage() {
 
   if (isLoading || !user) {
     return (
-        <Layout>
-            <div className="text-center py-12">
-                <div className="spinner mx-auto"></div>
-            </div>
-        </Layout>
+      <Layout>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+        </div>
+      </Layout>
     );
   }
 
@@ -248,35 +243,37 @@ export default function PurchasePage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                🛒 Kupovina
+                🛒 Moja Korpa
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Shopping korpa - Ulogovani kao <span className="font-semibold text-purple-600">{user?.username}</span>
+                Ulogovani kao <span className="font-semibold text-purple-600">{user?.username}</span>
               </p>
             </div>
+            <Link
+              to="/tourist-tours"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ← Pregledaj ture
+            </Link>
           </div>
         </div>
 
-        {/* Development warning modal for Transactions */}
+        {/* Development warning modal */}
         {showDevModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="fixed inset-0 bg-black opacity-40" onClick={() => setShowDevModal(false)} />
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-lg mx-4 p-6 z-10">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Upozorenje (development)</h3>
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                Ovo je development funkcionalnost i služi za debagovanje SAGA transakcija. U produkciji bi
-                ova poruka i alatke trebalo da budu uklonjene.
+                Ovo je development funkcionalnost i služi za debagovanje SAGA transakcija.
               </p>
               <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => setShowDevModal(false)}
-                  className="btn btn-secondary"
-                >
+                <button onClick={() => setShowDevModal(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">
                   Otkaži
                 </button>
                 <button
                   onClick={() => { setShowDevModal(false); setActiveTab("transactions"); fetchTransactions(); }}
-                  className="btn btn-primary"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Nastavi
                 </button>
@@ -295,7 +292,7 @@ export default function PurchasePage() {
                 : "text-gray-600 dark:text-gray-400"
             }`}
           >
-            🛒 Korpa
+            🛒 Korpa {cart && cart.items.length > 0 && `(${cart.items.length})`}
           </button>
           <button
             onClick={() => { setActiveTab("tokens"); fetchTokens(); }}
@@ -305,7 +302,7 @@ export default function PurchasePage() {
                 : "text-gray-600 dark:text-gray-400"
             }`}
           >
-            🎫 Moji Tokeni
+            🎫 Kupljene Ture {tokens.length > 0 && `(${tokens.length})`}
           </button>
           <button
             onClick={() => { setShowDevModal(true); }}
@@ -315,165 +312,201 @@ export default function PurchasePage() {
                 : "text-gray-600 dark:text-gray-400"
             }`}
           >
-            📊 Istorija Kupovina
+            📊 Istorija
           </button>
         </div>
 
         {/* Shopping Cart Tab */}
         {activeTab === "cart" && (
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Add to Cart Form */}
-            <div className="lg:col-span-1">
-              <div className="card sticky top-24">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                  Dodaj u Korpu
-                </h2>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    addToCart(
-                      formData.get("tourName") as string,
-                      parseFloat(formData.get("price") as string),
-                      parseInt(formData.get("quantity") as string)
-                    );
-                    e.currentTarget.reset();
-                  }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Naziv Ture
-                    </label>
-                    <input type="text" name="tourName" className="input" placeholder="Tour #1" required />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Cena
-                    </label>
-                    <input type="number" name="price" step="0.01" className="input" defaultValue="100.00" required />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Količina
-                    </label>
-                    <input type="number" name="quantity" className="input" defaultValue="1" min="1" required />
-                  </div>
-                  <button type="submit" disabled={loading} className="btn btn-primary w-full">
-                    Dodaj u Korpu
-                  </button>
-                </form>
+          <div>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Učitavanje...</p>
               </div>
-            </div>
-
-            {/* Cart Display */}
-            <div className="lg:col-span-2">
-              {cart && Array.isArray(cart.items) && cart.items.length > 0 ? (
-                <div className="card">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      Vaša Korpa
-                    </h2>
-                    {(() => {
-                      const st = statusToSerbian(cart.status);
-                      return <span className={`badge ${st.badge}`}>{st.label}</span>;
-                    })()}
-                  </div>
-
-                  <div className="space-y-4">
-                    {cart.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{item.tour_name}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            ${item.tour_price.toFixed(2)} x {item.quantity}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">
-                            ${item.price.toFixed(2)}
-                          </div>
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            ) : cart && Array.isArray(cart.items) && cart.items.length > 0 ? (
+              <div className="grid lg:grid-cols-3 gap-8">
+                {/* Cart Items */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <span className="text-xl font-bold text-gray-900 dark:text-white">Ukupno:</span>
-                      <span className="text-2xl font-bold text-purple-600">${cart.total_price.toFixed(2)}</span>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        Stavke u korpi
+                      </h2>
+                      {(() => {
+                        const st = statusToSerbian(cart.status);
+                        return <span className={`px-3 py-1 rounded-full text-sm ${st.badge}`}>{st.label}</span>;
+                      })()}
                     </div>
+
+                    <div className="space-y-4">
+                      {cart.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{item.tour_name}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {formatPrice(item.tour_price)} po osobi
+                            </p>
+                            <Link 
+                              to={`/tours/${item.tour_id}`}
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              Pogledaj turu →
+                            </Link>
+                          </div>
+                          
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-3 mx-4">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1 || loading}
+                              className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 disabled:opacity-50"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-medium">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              disabled={loading}
+                              className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div className="flex items-center space-x-4">
+                            <div className="text-xl font-bold text-gray-900 dark:text-white">
+                              {formatPrice(item.price)}
+                            </div>
+                            <button
+                              onClick={() => removeFromCart(item.id)}
+                              disabled={loading}
+                              className="text-red-600 hover:text-red-700 p-2"
+                              title="Ukloni iz korpe"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="lg:col-span-1">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-24">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                      Pregled narudžbine
+                    </h3>
+                    
+                    <div className="space-y-3 mb-6">
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Broj tura:</span>
+                        <span>{cart.items.length}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Ukupno osoba:</span>
+                        <span>{cart.items.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                      </div>
+                      <hr className="border-gray-200 dark:border-gray-700" />
+                      <div className="flex justify-between text-xl font-bold">
+                        <span>Ukupno:</span>
+                        <span className="text-purple-600">{formatPrice(cart.total_price)}</span>
+                      </div>
+                    </div>
+
                     <button
                       onClick={checkout}
-                      disabled={loading}
-                      className="btn btn-success w-full text-lg"
+                      disabled={loading || cart.items.length === 0}
+                      className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? "Procesiranje..." : "Kupi Sada"}
+                      {loading ? "Procesiranje..." : "💳 Završi kupovinu"}
                     </button>
+                    
+                    <p className="mt-4 text-xs text-gray-500 text-center">
+                      Klikom na "Završi kupovinu" prihvatate naše uslove korišćenja
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="card text-center py-12">
-                  <div className="text-6xl mb-4">🛒</div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Korpa je Prazna
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Dodajte ture u korpu da biste započeli kupovinu
-                  </p>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
+                <div className="text-6xl mb-4">🛒</div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Vaša korpa je prazna
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Pregledajte dostupne ture i dodajte ih u korpu
+                </p>
+                <Link
+                  to="/tourist-tours"
+                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Pregledaj ture
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
         {/* Tokens Tab */}
         {activeTab === "tokens" && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.isArray(tokens) && tokens.length > 0 ? (
-              tokens.map((token) => (
-                <div key={token.id} className="card">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="text-2xl">🎫</div>
-                    {(() => {
-                      const st = statusToSerbian(token.is_active);
-                      return <span className={`badge ${st.badge}`}>{st.label}</span>;
-                    })()}
+          <div>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+              </div>
+            ) : Array.isArray(tokens) && tokens.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tokens.map((tkn) => (
+                  <div key={tkn.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="text-2xl">🎫</div>
+                      {(() => {
+                        const st = statusToSerbian(tkn.is_active);
+                        return <span className={`px-2 py-1 rounded text-xs ${st.badge}`}>{st.label}</span>;
+                      })()}
+                    </div>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">{tkn.tour_name}</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Token:</span>
+                        <span className="font-mono text-xs">{tkn.token}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Cena:</span>
+                        <span className="font-semibold">{formatPrice(tkn.purchase_price)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Datum:</span>
+                        <span>{new Date(tkn.purchased_at).toLocaleDateString('sr-RS')}</span>
+                      </div>
+                    </div>
+                    <Link
+                      to={`/tours/${tkn.tour_id}`}
+                      className="mt-4 block text-center text-blue-600 hover:underline text-sm"
+                    >
+                      Pogledaj turu →
+                    </Link>
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">{token.tour_name}</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Token:</span>
-                      <span className="font-mono text-xs text-gray-900 dark:text-white">{token.token}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Cena:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">${token.purchase_price.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Datum:</span>
-                      <span className="text-gray-900 dark:text-white">{new Date(token.purchased_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
-              <div className="col-span-full card text-center py-12">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
                 <div className="text-6xl mb-4">🎫</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Nema Tokena
+                  Nemate kupljenih tura
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Završite kupovinu da dobijete tokene
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Kupljene ture će se pojaviti ovde
                 </p>
+                <Link
+                  to="/tourist-tours"
+                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Pregledaj ture
+                </Link>
               </div>
             )}
           </div>
@@ -484,45 +517,42 @@ export default function PurchasePage() {
           <div className="space-y-6">
             {Array.isArray(transactions) && transactions.length > 0 ? (
               transactions.map((tx) => (
-                <div key={tx.id} className="card">
+                <div key={tx.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">{tx.transaction_id}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(tx.created_at).toLocaleString()}
+                        {new Date(tx.created_at).toLocaleString('sr-RS')}
                       </p>
                     </div>
                     {(() => {
                       const st = statusToSerbian(tx.status);
-                      return <span className={`badge ${st.badge}`}>{st.label}</span>;
+                      return <span className={`px-3 py-1 rounded-full text-sm ${st.badge}`}>{st.label}</span>;
                     })()}
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Završeni Koraci:</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Završeni koraci:</h4>
                       {Array.isArray(tx.steps_completed) && tx.steps_completed.length > 0 ? (
                         <ul className="space-y-1">
                           {tx.steps_completed.map((step, idx) => (
-                            <li key={idx} className="text-sm text-green-600 dark:text-green-400 flex items-center">
-                              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                              {step}
+                            <li key={idx} className="text-sm text-green-600 flex items-center">
+                              ✅ {step}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 italic">Nema završenih koraka</p>
+                        <p className="text-sm text-gray-500 italic">Nema završenih koraka</p>
                       )}
                     </div>
 
                     {Array.isArray(tx.compensation_log) && tx.compensation_log.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Log Kompenzacije:</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Log kompenzacije:</h4>
                         <ul className="space-y-1">
                           {tx.compensation_log.map((log, idx) => (
-                            <li key={idx} className="text-sm text-orange-600 dark:text-orange-400">• {log}</li>
+                            <li key={idx} className="text-sm text-orange-600">• {log}</li>
                           ))}
                         </ul>
                       </div>
@@ -537,10 +567,10 @@ export default function PurchasePage() {
                 </div>
               ))
             ) : (
-              <div className="card text-center py-12">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
                 <div className="text-6xl mb-4">📊</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Nema Transakcija
+                  Nema transakcija
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   Vaše transakcije će se prikazati ovde

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     neo4j_password: str
         
     # Security
-    secret_key: str
+    jwt_secret: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     

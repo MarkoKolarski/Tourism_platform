@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package purchases;
+
+option go_package = "tours-service/proto/purchases";
+
+service PurchasesService {
+  rpc VerifyPurchase(VerifyPurchaseRequest) returns (VerifyPurchaseResponse);
+}
+
+message VerifyPurchaseRequest {
+  int32 user_id = 1;
+  int32 tour_id = 2;
+}
+
+message VerifyPurchaseResponse {
+  bool has_purchased = 1;
+  string token_id = 2;
+  string purchased_at = 3;
+  string error = 4;
+}
