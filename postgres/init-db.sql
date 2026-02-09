@@ -238,3 +238,206 @@ UPDATE key_points
 SET image_url = 'https://upload.wikimedia.org/wikipedia/commons/d/d5/K01_066_Beogradska_Tvr%C4%91ava%3B_Zindan-Tor.jpg'
 WHERE tour_id = 3
 AND name = 'Zindan Gate';
+
+
+--blogovi
+-- Insert blogova o gradovima i znamenitostima u Srbiji
+-- marko_vodic (Marko), ana_guide (Ana), stefan_tours (Stefan)
+\c tourism_blogs;
+
+CREATE TABLE IF NOT EXISTS blogs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    description TEXT,
+    user_id INTEGER NOT NULL,
+    user_name VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    images JSONB DEFAULT '[]'::jsonb,
+    tags JSONB DEFAULT '[]'::jsonb,
+    like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'draft'
+);
+-- Blog 1: Beograd
+INSERT INTO blogs (id, title, content, description, user_id, user_name, created_at, updated_at, images, tags, like_count, comment_count, status) VALUES
+(
+    gen_random_uuid(),
+    'Beograd - Grad koji nikad ne spava',
+    '## Glavni grad Srbije
+    
+Beograd je prestonica Srbije sa bogatom istorijom koja seže preko 7000 godina unazad.
+
+### Znamenitosti:
+
+1. **Kalemegdan** - Tvrđava sa prelepim pogledom na ušće Save u Dunav
+2. **Skadarlija** - Boemska četvrt poznata po tradicionalnim restoranima
+3. **Hram Svetog Save** - Jedan od najvećih pravoslavnih hramova na svetu
+4. **Ada Ciganlija** - Ostrvo-poluostrvo koje je omiljeno izletište građana
+
+### Saveti za posetioce:
+- Posetite Kalemegdan u sumrak radi neverovatnog pogleda
+- Probajte tradicionalnu srpsku kuhinju u Skadarliji
+- Koristite gradski prevoz koji je dobro povezan
+
+Beograd je živahan grad koji nudi bogat noćni život, kulturu i istoriju.',
+    'Upoznajte glavni grad Srbije kroz njegove znamenitosti i kulturu',
+    2,
+    'marko_vodic',
+    NOW() - INTERVAL '10 days',
+    NOW() - INTERVAL '2 days',
+    '["kalemegdan.jpg", "skadarlija.jpg", "hram_svetog_save.jpg"]',
+    '["Beograd", "Kalemegdan", "Skadarlija", "Hram Svetog Save", "istorija", "kultura"]',
+    15,
+    3,
+    'published'
+);
+
+-- Blog 2: Novi Sad
+INSERT INTO blogs (id, title, content, description, user_id, user_name, created_at, updated_at, images, tags, like_count, comment_count, status) VALUES
+(
+    gen_random_uuid(),
+    'Novi Sad - Srpska Atina',
+    '## Kulturna prestonica Vojvodine
+    
+Novi Sad je drugi po veličini grad u Srbiji, poznat po svojoj kulturi, obrazovanju i lepim parkovima.
+
+### Petrovaradinska tvrđava
+Najpoznatija znamenitost Novog Sada koja domaći **EXIT festival**. Tvrđava je izgrađena u 18. veku i pruža panoramski pogled na grad.
+
+### Dunavski park i Štrand
+- **Dunavski park** - Jedan od najlepših parkova u Srbiji
+- **Štrand** - Gradska plaža na Dunavu, popularna leti
+
+### Centar grada
+- **Zmaj Jovina ulica** - Glavna pešačka zona
+- **Katolička katedrala** - U središtu Trga Slobode
+- **Srpsko narodno pozorište** - Jedno od najstarijih pozorišta u zemlji
+
+### Godišnji događaji:
+- **EXIT festival** (juli)
+- **Novosadski sajam** (septembar)
+- **Dan grada** (1. februara)',
+    'Istražite lepote Novog Sada i njegove kulturno-istorijske znamenitosti',
+    3,
+    'ana_guide',
+    NOW() - INTERVAL '7 days',
+    NOW() - INTERVAL '1 day',
+    '["petrovaradin.jpg", "dunavski_park.jpg", "trg_slobode.jpg"]',
+    '["Novi Sad", "Petrovaradin", "EXIT festival", "Vojvodina", "kultura", "festival"]',
+    22,
+    5,
+    'published'
+);
+
+-- Blog 3: Niš
+INSERT INTO blogs (id, title, content, description, user_id, user_name, created_at, updated_at, images, tags, like_count, comment_count, status) VALUES
+(
+    gen_random_uuid(),
+    'Niš - Grad imperatora',
+    '## Istorijski značaj Niša
+    
+Niš je treći po veličini grad u Srbiji, poznat kao rodno mesto rimskog cara Konstantina Velikog.
+
+### Glavne znamenitosti:
+
+#### 1. **Niška tvrđava**
+Jedna od najbolje očuvanih turskih tvrđava na Balkanu, smeštena na obali reke Nišave.
+
+#### 2. **Ćele kula**
+Spomenik iz vreme Prvog srpskog ustanka, sagrađen od lobanja srpskih ustanika.
+
+#### 3. **Koncentracioni logor Crveni krst**
+Podignut od strane nacista tokom Drugog svetskog rata, danas je memorijalni kompleks.
+
+#### 4. **Medijana**
+Antička carska villa sa mozaicima iz rimskog perioda.
+
+### Kulinarski specijaliteti:
+- **Niški ćevap** - Poseban način pripreme ćevapa
+- **Burek sa sirom** - Tradicionalno jelo
+- **Kompot od dunja** - Lokalni desert
+
+### Saveti:
+- Posetite tvrđavu uveče kada je osvetljena
+- Kombinujte posetu Ćele kuli i logoru Crveni krst
+- Probajte lokalnu kuhinju u kafanama oko tvrđave',
+    'Otkrijte bogatu istoriju Niša kroz njegove spomenike i kulturu',
+    4,
+    'stefan_tours',
+    NOW() - INTERVAL '5 days',
+    NOW(),
+    '["niska_tvrdjava.jpg", "cele_kula.jpg", "medijana.jpg"]',
+    '["Niš", "istorija", "Ćele kula", "Konstantin Veliki", "kultura", "spomenici"]',
+    18,
+    4,
+    'published'
+);
+
+-- Blog 4: Zlatibor
+INSERT INTO blogs (id, title, content, description, user_id, user_name, created_at, updated_at, images, tags, like_count, comment_count, status) VALUES
+(
+    gen_random_uuid(),
+    'Zlatibor - Planinski raj',
+    '## Turističko središte zapadne Srbije
+    
+Zlatibor je planinska oblast poznata po čistom vazduhu, prelepim pejzažima i razvijenoj turističkoj infrastrukturi.
+
+### Šta posetiti:
+
+#### **Turistički centar**
+Ski staze, žičara, šetališta i brojni hoteli i restorani.
+
+#### **Sirogojno**
+Etno selo sa tradicionalnim drvenim kućama iz 19. veka.
+
+#### **Stopića pećina**
+Jedna od najlepših pećina u Srbiji sa podzemnim jezerima i stalagmitima.
+
+#### **Gostilje**
+Mesto gde se nalazi najduži ski lift na Zlatiboru.
+
+### Aktivnosti:
+- **Skiing** (decembar-mart)
+- **Šetanje i planinarenje**
+- **Jahanje**
+- **Vožnja žičarom**
+
+### Specifičnosti:
+- **Zlatiborski pršut** - Suvomesnati proizvod
+- **Zlatiborska čajanka** - Biljni čaj
+- **Kačamak** - Tradicionalno jelo od krompira',
+    'Planinski odmor na Zlatiboru - savršeno za opuštanje i aktivnosti u prirodi',
+    2,
+    'marko_vodic',
+    NOW() - INTERVAL '3 days',
+    NOW(),
+    '["zlatibor_planina.jpg", "sirogojno.jpg", "stopica_pecina.jpg"]',
+    '["Zlatibor", "planine", "ski", "turizam", "priroda", "Sirogojno"]',
+    25,
+    7,
+    'published'
+);
+
+-- Blog 5: Subotica (u draft statusu)
+INSERT INTO blogs (id, title, content, description, user_id, user_name, created_at, updated_at, images, tags, like_count, comment_count, status) VALUES
+(
+    gen_random_uuid(),
+    'Subotica - Secesijski biser',
+    '## Grad sa najlepšom secesijskom arhitekturom
+    
+Subotica, grad na severu Srbije, poznat je po jedinstvenoj mešavini mađarske i srpske kulture.
+
+### Znamenitosti u pripremi...',
+    'Arhitektonske lepote Subotice kroz secesijske zgrade i kulturu',
+    3,
+    'ana_guide',
+    NOW() - INTERVAL '2 days',
+    NOW(),
+    '[]',
+    '["Subotica", "secesija", "arhitektura", "Vojvodina", "kultura"]',
+    0,
+    0,
+    'draft'
+);

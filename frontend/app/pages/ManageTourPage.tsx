@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import MapComponent from "../components/MapComponent";
 import { useAuth } from "../context/AuthContext";
 import { useUserLocation } from "../hooks/useUserLocation";
+import React, { lazy, Suspense } from 'react';
 
 interface Tour {
   id: number;
