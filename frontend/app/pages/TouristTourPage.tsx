@@ -391,7 +391,7 @@ export default function TouristTourPage() {
                         Ključne tačke ({tour.keypoints.length}):
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {tour.keypoints.slice(0, 3).map((kp) => (
+                        {tour.keypoints.slice(0, 1).map((kp) => (
                           <div key={kp.id} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-xs border border-gray-200 dark:border-gray-600">
                             {kp.image_url && (
                               <img 
@@ -403,9 +403,9 @@ export default function TouristTourPage() {
                             <span className="text-gray-700 dark:text-gray-300">{kp.order}. {kp.name}</span>
                           </div>
                         ))}
-                        {tour.keypoints.length > 3 && (
+                        {tour.keypoints.length > 1 && (
                           <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
-                            +{tour.keypoints.length - 3}
+                            +{tour.keypoints.length - 1}
                           </span>
                         )}
                       </div>
