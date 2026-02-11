@@ -12,14 +12,62 @@ export default function ReviewForm({ tourId, onSuccess }: ReviewFormProps) {
   const [comment, setComment] = useState("");
   const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
   const [images, setImages] = useState<string[]>([]);
-  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAddImage = () => {
-    if (imageUrl.trim()) {
-      setImages([...images, imageUrl.trim()]);
-      setImageUrl("");
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploading(true);
+      setError(null);
+
+      const uploadedUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          setError(`Slika ${file.name} je prevelika. Maksimalna veličina je 10MB.`);
+          continue;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          setError(`Fajl ${file.name} nije slika.`);
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch('/api/tours-service/images/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          uploadedUrls.push(data.url);
+        } else {
+          setError(`Greška pri upload-u slike ${file.name}`);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        setImages([...images, ...uploadedUrls]);
+      }
+    } catch (err) {
+      setError("Greška pri upload-u slika");
+      console.error(err);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -60,7 +108,7 @@ export default function ReviewForm({ tourId, onSuccess }: ReviewFormProps) {
       // Reset form
       setRating(5);
       setComment("");
-      setVisitDate("");
+      setVisitDate(new Date().toISOString().split('T')[0]);
       setImages([]);
       setError(null);
 
@@ -139,37 +187,42 @@ export default function ReviewForm({ tourId, onSuccess }: ReviewFormProps) {
         />
       </div>
 
-      {/* Images */}
+      {/* Images - File Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Slike (opciono)
         </label>
-        <div className="flex gap-2 mb-2">
+        <div className="mb-2">
           <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="URL slike..."
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileUpload}
+            disabled={uploading}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-200"
           />
-          <button
-            type="button"
-            onClick={handleAddImage}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Dodaj
-          </button>
+          {uploading && (
+            <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+              Upload u toku...
+            </p>
+          )}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Maksimalna veličina po slici: 10MB. Podržani formati: JPG, PNG, GIF, WebP
+          </p>
         </div>
         {images.length > 0 && (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {images.map((img, index) => (
-              <div key={index} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                <img src={img} alt="" className="w-16 h-16 object-cover rounded" />
-                <span className="flex-1 text-sm text-gray-600 dark:text-gray-400 truncate">{img}</span>
+              <div key={index} className="relative group">
+                <img 
+                  src={img} 
+                  alt={`Upload ${index + 1}`} 
+                  className="w-full h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                />
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(index)}
-                  className="text-red-600 hover:text-red-800"
+                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   ✕
                 </button>
@@ -181,7 +234,7 @@ export default function ReviewForm({ tourId, onSuccess }: ReviewFormProps) {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || uploading}
         className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
       >
         {loading ? "Slanje..." : "Pošalji recenziju"}

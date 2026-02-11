@@ -23,6 +23,14 @@ func main() {
 	// Initialize configuration
 	cfg := config.LoadConfig()
 
+	// Create uploads directory if it doesn't exist
+	uploadsDir := "./uploads/reviews"
+	if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
+		log.Printf("Warning: Failed to create uploads directory: %v", err)
+	} else {
+		log.Printf("Uploads directory ready: %s", uploadsDir)
+	}
+
 	// Initialize database
 	db := database.InitDB(cfg)
 	defer db.Close()

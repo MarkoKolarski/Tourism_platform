@@ -27,15 +27,22 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 	root.GET("/tours/:id/travel-times", getTravelTimes(db))
 	root.GET("/tours/for-tourists", getToursForTourists(db))
 	root.GET("/tours/status/:status", getToursByStatus(db))
+	root.GET("/images/reviews/:filename", serveReviewImage())
 
 	// Initialize gRPC client for purchases service
 	purchasesClient := grpc.NewPurchasesGRPCClient(cfg.PurchasesGRPCAddr)
 
 	// Initialize tour execution handler
 	executionHandler := handlers.NewTourExecutionHandler(db, purchasesClient)
+	
+	// Initialize image upload handler
+	imageHandler := handlers.NewImageUploadHandler()
 
 	// Protected routes - require authentication
 	protected := root.Use(middleware.NewAuthMiddleware(cfg, db))
+
+	// Image upload route - authenticated users only (any authenticated user can upload)
+	protected.POST("/images/upload", imageHandler.UploadImage)
 
 	// Tourist routes with purchase verification - secure endpoints
 	protected.POST("/tours/:id/start", executionHandler.StartTour)
@@ -47,7 +54,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, cfg *config.Config) {
 
 	// Location simulator routes - private, use authenticated user
 	protected.GET("/locations/current", getCurrentLocation(db))
-	protected.PUT("/locations/current", updateCurrentLocationWithTourCheck(db)) // Enhanced version
+	protected.PUT("/locations/current", updateCurrentLocationWithTourCheck(db))
 	protected.DELETE("/locations/current", clearCurrentLocation(db))
 
 	// VODIC routes
@@ -160,8 +167,6 @@ func createTour(db *sql.DB) gin.HandlerFunc {
 		log.Printf("[createTour] Creating tour for authorID: %d, request: %+v", authorID, req)
 		tour, err := models.CreateTour(db, req, authorID)
 		if err != nil {
-			log.Printf("[createTour] Failed to create tour: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tour"})
 			return
 		}
 
@@ -1152,5 +1157,12 @@ func getCompletedKeyPointsForExecution(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"completed_keypoints": completed})
+	}
+}
+
+func serveReviewImage() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		imageHandler := handlers.NewImageUploadHandler()
+		imageHandler.ServeImage(c)
 	}
 }
