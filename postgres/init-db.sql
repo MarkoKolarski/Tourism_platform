@@ -109,9 +109,9 @@ CREATE TABLE IF NOT EXISTS travel_times (
 -- Insert Ana's Tours (author_id = 3)
 INSERT INTO tours (id, name, description, difficulty, tags, price, status, total_length_km, author_id, published_at, created_at, updated_at)
 VALUES 
-(1, 'Belgrade Historic Walk', 'Discover the rich history of Belgrade through its most iconic landmarks and hidden gems.', 2, '{"history", "culture", "architecture"}', 25.00, 'published', 3.2, 3, NOW(), NOW(), NOW()),
-(2, 'Novi Sad City Center Tour', 'Explore the charming streets and cultural sites of Novi Sad, the cultural capital of Serbia.', 1, '{"culture", "walking", "sightseeing"}', 20.00, 'published', 2.1, 3, NOW(), NOW(), NOW()),
-(3, 'Belgrade Fortress Adventure', 'An exciting tour through Kalemegdan Park and Belgrade Fortress with stunning Danube views.', 3, '{"adventure", "history", "nature"}', 30.00, 'published', 4.5, 3, NOW(), NOW(), NOW());
+(1, 'Belgrade Historic Walk', 'Discover the rich history of Belgrade through its most iconic landmarks and hidden gems.', 2, '{"history", "culture", "architecture"}', 9000.00, 'published', 3.2, 3, NOW(), NOW(), NOW()),
+(2, 'Novi Sad City Center Tour', 'Explore the charming streets and cultural sites of Novi Sad, the cultural capital of Serbia.', 1, '{"culture", "walking", "sightseeing"}', 11000.00, 'published', 2.1, 3, NOW(), NOW(), NOW()),
+(3, 'Belgrade Fortress Adventure', 'An exciting tour through Kalemegdan Park and Belgrade Fortress with stunning Danube views.', 3, '{"adventure", "history", "nature"}', 15000.00, 'published', 4.5, 3, NOW(), NOW(), NOW());
 
 -- Belgrade Historic Walk Key Points
 INSERT INTO key_points (tour_id, name, description, latitude, longitude, image_url, "order", created_at, updated_at)
