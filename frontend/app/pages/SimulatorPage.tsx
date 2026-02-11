@@ -7,8 +7,8 @@ import { useAuth } from "../context/AuthContext";
 interface Location {
   id: number;
   user_id: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   recorded_at: string;
 }
 
@@ -193,13 +193,24 @@ export default function SimulatorPage() {
                     </p>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="font-medium">Latitude:</span> {simulatorData.current_location.latitude.toFixed(6)}
+                        <span className="font-medium">Latitude:</span>{" "}
+                        {simulatorData.current_location.latitude != null
+                          ? simulatorData.current_location.latitude.toFixed(6)
+                          : "N/A"}
                       </div>
                       <div>
-                        <span className="font-medium">Longitude:</span> {simulatorData.current_location.longitude.toFixed(6)}
+                        <span className="font-medium">Longitude:</span>{" "}
+                        {simulatorData.current_location.longitude != null
+                          ? simulatorData.current_location.longitude.toFixed(6)
+                          : "N/A"}
                       </div>
                       <div className="col-span-2">
-                        <span className="font-medium">Poslednja izmena:</span> {new Date(simulatorData.current_location.recorded_at).toLocaleString("sr-RS")}
+                        <span className="font-medium">Poslednja izmena:</span>{" "}
+                        {simulatorData.current_location.recorded_at
+                          ? new Date(
+                              simulatorData.current_location.recorded_at
+                            ).toLocaleString("sr-RS")
+                          : "N/A"}
                       </div>
                     </div>
                     <button
@@ -231,8 +242,12 @@ export default function SimulatorPage() {
 
                 <div className="relative" style={{ zIndex: 1 }}>
                   <MapComponent
-                    latitude={simulatorData.current_location?.latitude}
-                    longitude={simulatorData.current_location?.longitude}
+                    latitude={
+                      simulatorData.current_location?.latitude ?? undefined
+                    }
+                    longitude={
+                      simulatorData.current_location?.longitude ?? undefined
+                    }
                     onMapClick={handleMapClick}
                     className="w-full h-96"
                     showUserLocation={true}

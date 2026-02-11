@@ -16,8 +16,8 @@ interface CompletedKeyPoint {
 }
 
 interface MapComponentProps {
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   onMapClick: (lat: number, lng: number) => void;
   className?: string;
   keyPoints?: KeyPoint[];
@@ -64,9 +64,12 @@ export default function MapComponent({
         });
 
         // Initialize map
-        const initialCenter: [number, number] = latitude && longitude 
-          ? [latitude, longitude] 
-          : keyPoints.length > 0 
+        const hasUserCoords =
+          latitude != null && longitude != null;
+
+        const initialCenter: [number, number] = hasUserCoords
+          ? [latitude as number, longitude as number]
+          : keyPoints.length > 0
           ? [keyPoints[0].latitude, keyPoints[0].longitude]
           : [45.267136, 19.833549]; // Novi Sad default
 
@@ -238,7 +241,10 @@ export default function MapComponent({
     }
 
     // SHOW USER LOCATION (red dot) - for tourists
-    if (showUserLocation && latitude && longitude) {
+    const hasUserCoords =
+      latitude != null && longitude != null;
+
+    if (showUserLocation && hasUserCoords) {
       const userIcon = L.divIcon({
         className: 'custom-div-icon',
         html: `<div style="
@@ -260,33 +266,36 @@ export default function MapComponent({
         iconAnchor: [10, 10]
       });
 
-      userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon })
+      userMarkerRef.current = L.marker(
+        [latitude as number, longitude as number],
+        { icon: userIcon }
+      )
         .bindPopup('<b>Vaša lokacija</b>')
         .addTo(map);
 
-      // If there are keypoints, include user location in bounds
       if (keyPoints.length > 0) {
         const allLatLngs = [
-          ...keyPoints.map(kp => [kp.latitude, kp.longitude] as [number, number]),
-          [latitude, longitude] as [number, number]
+          ...keyPoints.map(
+            kp => [kp.latitude, kp.longitude] as [number, number]
+          ),
+          [latitude as number, longitude as number] as [number, number]
         ];
         const bounds = L.latLngBounds(allLatLngs);
         map.fitBounds(bounds, { padding: [20, 20] });
       } else {
-        // Pan to user location if no keypoints
-        map.panTo([latitude, longitude]);
+        map.panTo([latitude as number, longitude as number]);
       }
     }
 
     // GUIDE MODE - Show default marker for new keypoint selection (not editing existing)
-    if (!showUserLocation && latitude && longitude && !editingKeyPointId) {
-      // Use default Leaflet marker
-      userMarkerRef.current = L.marker([latitude, longitude])
+    if (!showUserLocation && hasUserCoords && !editingKeyPointId) {
+      userMarkerRef.current = L.marker(
+        [latitude as number, longitude as number]
+      )
         .bindPopup('<b>Odabrana lokacija za novu ključnu tačku</b>')
         .addTo(map);
 
-      // Pan to selected location
-      map.panTo([latitude, longitude]);
+      map.panTo([latitude as number, longitude as number]);
     }
   };
 
