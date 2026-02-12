@@ -10,9 +10,7 @@
 - 15.
 - 17. tour-service needs to do RPC with purchase-service to check if tour is bought
 
-
 # fix (but we really don't care):
-- TouristTours: fix frontend price filter to match db prices
 - followers service should verify JWT token on each request
 - gRPC: move out the proto code generation outside Dockerfile
     - make gen.sh scripts that build proto files to code
